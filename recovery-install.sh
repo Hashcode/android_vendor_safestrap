@@ -34,9 +34,9 @@ else
 	fi
 	/system/bin/ln -s $busybox_loc /system/xbin/mount
 	if [ ! -d "/system/etc/rootfs" ]; then
-		/system/bin/cp install-files/system/etc/* /system/etc
-		/system/bin/chown root.shell /system/etc/rootfs/*
-		/system/bin/chmod 644 /system/etc/rootfs/*
+		/system/bin/cp -r install-files/system/etc/* /system/etc
+		/system/bin/chown -r root.shell /system/etc/rootfs
+		/system/bin/chmod -r 644 /system/etc/rootfs
 	fi
 	$busybox_loc mount -o ro,remount /system
 
