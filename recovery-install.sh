@@ -31,7 +31,7 @@ if [ "$busybox_loc" != "" ]; then
 	fi
 	ln -s $busybox_loc /system/xbin/mount
 	if [ ! -d "/system/etc/rootfs" ]; then
-		cp -r install-files/system/etc /system/etc
+		cp install-files/system/etc/* /system/etc
 		chown -R root.shell /system/etc/rootfs
 		chmod -R 644 /system/etc/rootfs
 	fi
