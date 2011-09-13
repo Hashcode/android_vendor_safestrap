@@ -1,0 +1,97 @@
+#!/system/bin/sh
+
+PATH=/system/xbin:/system/bin
+OLDINITRC=/init.rc
+bootmode=$(getprop ro.bootmode)
+
+/system/bin/logwrapper.orig "$@"
+
+ID=`id`
+
+echo $ID >> /data/debug-whoami
+if [ "$bootmode" = "bp-tools" ]; then
+	date >>/data/debug 2>&1
+	echo "bootmode is: " $bootmode >>/data/debug 2>&1
+	if [ -f "/data/.recovery_mode" ]; then
+		echo "found .recovery_mode" >>/data/debug 2>&1
+		rm /data/.recovery_mode
+		mount -t ext3 /dev/block/preinstall /preinstall >>/data/debug 2>&1
+		if [ -d "/preinstall/recovery" ]; then
+			# mount rootfs writeable
+			mount -o remount,rw rootfs >>/data/debug 2>&1
+
+			# recreate /tmp where it's not a symlink
+			rm /tmp >>/data/debug 2>&1
+			mkdir /tmp >>/data/debug 2>&1
+			chmod 755 /tmp >>/data/debug 2>&1
+
+			# recreate /etc where it's not a symlink
+			rm /etc >>/data/debug 2>&1
+			mkdir /etc >>/data/debug 2>&1
+			chmod 755 /etc >>/data/debug 2>&1
+
+			# make /res directories
+			mkdir /res >>/data/debug 2>&1
+			chmod 755 /res >>/data/debug 2>&1
+			mkdir /res/images >>/data/debug 2>&1
+			chmod 755 /res/images >>/data/debug 2>&1
+
+			rm /sdcard >>/data/debug 2>&1
+			rm /sdcard-ext >>/data/debug 2>&1
+			rm -r /mnt >>/data/debug 2>&1
+			
+			# move apps into /tmp for execution later
+			cp /system/xbin/taskset /sbin >>/data/debug 2>&1
+			cp /system/bin/sync /sbin >>/data/debug 2>&1
+			cp /system/bin/2nd-init /sbin >>/data/debug 2>&1
+
+			# setup rootfs
+			mv /sbin/adbd /sbin/adbd.old >>/data/debug 2>&1
+			cp /preinstall/recovery/* / >>/data/debug 2>&1
+			cp /preinstall/recovery/etc/* /etc >>/data/debug 2>&1
+			cp /preinstall/recovery/res/* /res >>/data/debug 2>&1
+			cp /preinstall/recovery/res/images/* /res/images >>/data/debug 2>&1
+			cp /preinstall/recovery/sbin/* /sbin >>/data/debug 2>&1
+			chmod 755 /sbin/* >>/data/debug 2>&1
+			cd /sbin >>/data/debug 2>&1
+			ln -s recovery busybox >>/data/debug 2>&1
+			ln -s recovery dump_image >>/data/debug 2>&1
+			ln -s recovery edify >>/data/debug 2>&1
+			ln -s recovery erase_image >>/data/debug 2>&1
+			ln -s recovery flash_image >>/data/debug 2>&1
+			ln -s recovery mkyaffs2image >>/data/debug 2>&1
+			ln -s recovery nandroid >>/data/debug 2>&1
+			ln -s recovery reboot >>/data/debug 2>&1
+			ln -s recovery unyaffs >>/data/debug 2>&1
+			ln -s recovery volume >>/data/debug 2>&1
+			for file in `./busybox --list`; do ln -s busybox "$file"; done >>/data/debug 2>&1
+		
+			/sbin/umount /preinstall
+			/sbin/busybox ls -l / >>/data/debug 2>&1
+			/sbin/busybox ls -l /sbin >>/data/debug 2>&1
+			/sbin/busybox ls -l /etc >>/data/debug 2>&1
+			/sbin/umount /data
+#			/sbin/umount /system
+			/sbin/taskset -p -c 0 1
+			/sbin/sync
+			/sbin/taskset -c 0 /system/bin/2nd-init
+		fi
+	else
+		echo "didnt find .recovery_mode" >>/data/debug 2>&1
+		NEWINITRC=/system/etc/rootfs/init.rc
+		OLDCDMARC=/system/etc/rootfs/init.mapphone_cdma.rc
+		OLDGSMRC=/system/etc/rootfs/init.mapphone_umts.rc
+		OLDMD5=`cat $OLDINITRC | md5sum`
+		NEWMD5=`cat $NEWINITRC | md5sum`
+		if [ "$OLDMD5" != "$NEWMD5" ]; then
+			mount -o remount,rw rootfs / >>/data/debug 2>&1
+			cp -p $NEWINITRC / >>/data/debug 2>&1
+			cp -p $OLDCDMARC / >>/data/debug 2>&1
+			cp -p $OLDGSMRC / >>/data/debug 2>&1
+			taskset -p -c 0 1
+			sync
+			taskset -c 0 /system/bin/2nd-init
+		fi
+	fi
+fi
+
