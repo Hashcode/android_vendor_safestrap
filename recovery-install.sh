@@ -1,50 +1,52 @@
 #!/system/bin/sh
+PATH=/system/bin:/system/xbin
 
 busybox_loc=`busybox which busybox`
-if [ "$busybox_loc" = "" ]; then
+if [ ! -f "$busybox_loc" ]; then
 	echo 'Busybox required for this installation.  Please copy install-files/system/bin/busybox to your PATH.  Installation aborted.'
 	exit
 fi
 
 if [ -d install-files ]; then
-	$busybox_loc rm -r install-files
+	rm -r install-files
 fi
 $busybox_loc tar -zxf install-files.tar.gz
-$busybox_loc mount -o remount,rw /system
+toolbox mount -o remount,rw /dev/null /system
 if [ ! -f "/system/bin/logwrapper.orig" ]; then
-	/system/bin/cp /system/bin/logwrapper /system/bin/logwrapper.orig
+	cp /system/bin/logwrapper /system/bin/logwrapper.orig
 fi
-/system/bin/cp install-files/system/bin/logwrapper /system/bin
-/system/bin/chown root.shell /system/bin/logwrapper
-/system/bin/chmod 755 /system/bin/logwrapper
-/system/bin/cp install-files/system/bin/2nd-init /system/bin
-/system/bin/chown root.shell /system/bin/2nd-init
-/system/bin/chmod 755 /system/bin/2nd-init
+cp install-files/system/bin/logwrapper /system/bin
+chown root.shell /system/bin/logwrapper
+chmod 755 /system/bin/logwrapper
+cp install-files/system/bin/2nd-init /system/bin
+chown root.shell /system/bin/2nd-init
+chmod 755 /system/bin/2nd-init
 if [ -f "/system/xbin/taskset" ]; then
 	rm /system/xbin/taskset
 fi
-/system/bin/cp install-files/system/xbin/taskset /system/xbin
-/system/bin/chown root.shell /system/xbin/taskset
-/system/bin/chmod 755 /system/xbin/taskset
+cp install-files/system/xbin/taskset /system/xbin
+chown root.shell /system/xbin/taskset
+chmod 755 /system/xbin/taskset
 if [ -f "/system/xbin/cp" ]; then
-	/system/bin/rm /system/xbin/cp
+	rm /system/xbin/cp
 fi
-/system/bin/ln -s $busybox_loc /system/xbin/cp
+ln -s $busybox_loc /system/xbin/cp
 if [ -f "/system/xbin/mount" ]; then
-	/system/bin/rm /system/xbin/mount
+	rm /system/xbin/mount
 fi
-/system/bin/ln -s $busybox_loc /system/xbin/mount
+ln -s $busybox_loc /system/xbin/mount
 if [ ! -d "/system/etc/rootfs" ]; then
-	/system/bin/cp -r install-files/system/etc/* /system/etc
-	/system/bin/chown -r root.shell /system/etc/rootfs
-	/system/bin/chmod -r 644 /system/etc/rootfs
+	cp -r install-files/system/etc/* /system/etc
+	chown -r root.shell /system/etc/rootfs
+	chmod -r 644 /system/etc/rootfs
 fi
-$busybox_loc mount -o ro,remount /system
+toolbox mount -o ro,remount /dev/null /system
 
-$busybox_loc mount -o remount,rw /preinstall
+toolbox mount -o remount,rw /dev/null /preinstall
 if [ -d "/preinstall/recovery" ]; then
 	/system/bin/rm -r /preinstall/recovery
 fi
-/system/bin/cp -r install-files/preinstall/recovery /preinstall
-$busybox_loc mount -o ro,remount /preinstall
+cp -r install-files/preinstall/recovery /preinstall
+$busybox_loc touch /data/.recovery_mode
+toolbox mount -o ro,remount /dev/null /preinstall
 
