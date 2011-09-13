@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 busybox_loc=`busybox which busybox`
-if [ "$busybox_loc" == "" ]; then
+if [ "$busybox_loc" = "" ]; then
 	echo 'Busybox required for this installation.  Please copy install-files/system/bin/busybox to your PATH.  Installation aborted.'
 	exit
 else
