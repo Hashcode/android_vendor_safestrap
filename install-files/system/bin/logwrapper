@@ -6,7 +6,8 @@ bootmode=$(getprop ro.bootmode)
 
 /system/bin/logwrapper.orig "$@"
 
-if [ "$bootmode" = "ap-bp-bypass" ] && [ -f "/data/.recovery_mode" ]; then
+#modes: ap-bp-bypass, bp-tools
+if [ "$bootmode" = "bp-tools" ] && [ -f "/data/.recovery_mode" ]; then
 	date >/data/debug 2>&1
 	echo "bootmode is: " $bootmode >>/data/debug 2>&1
 #	rm /data/.recovery_mode

@@ -1,7 +1,7 @@
 # mount point   fstype          device
 
-/boot           mtd             /dev/block/mmcblk1p15
-/recovery       mtd             /dev/block/mmcblk1p16
+/boot           emmc            /dev/block/mmcblk1p15
+/recovery       emmc            /dev/block/mmcblk1p16
 /cache          ext4            /dev/block/mmcblk1p22   NULL  ext3
 /data           ext4            /dev/block/mmcblk1p24	NULL  ext3
 /pds            ext4            /dev/block/mmcblk1p7    NULL  ext3
