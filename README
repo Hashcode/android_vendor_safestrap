@@ -1,13 +1,4 @@
-adb push install-files.tar.gz /data/local/tmp
-adb push recovery-install.sh /data/local/tmp
-adb shell
-su
-cd /data/local/tmp
-chmod 755 recovery-install.sh
-./recovery-install.sh
+** WARNING: THIS IS IN DEVELOPMENT AND SUBJECT TO CHANGE AT ANYTIME **
 
-Now shutdown the phone.
-
-Turn it on using the "boot menu" method: Power + "m" key.
-Choose "BP Tools" to enter recovery
+THESE FILES CAN CAUSE A BRICK IF USED INCORRECTLY OR CAUGHT MID-CHANGES
 
