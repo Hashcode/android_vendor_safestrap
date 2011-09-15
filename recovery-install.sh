@@ -17,9 +17,14 @@ if [ ! -f "$busybox_loc" ]; then
 fi
 
 $INSTALLPATH/busybox tar -xf $INSTALLPATH/install-files.tar -C $INSTALLPATH >> $LOGFILE
+if [ ! -d install-files ]; then
+	echo 'Error extracting tar file.  Aborting.'
+	exit
+fi
 
 toolbox mount -o remount,rw /dev/null /system >> $LOGFILE
 
+# check for a logwrapper.orig file and if there isn't one make a backup
 if [ ! -f "/system/bin/logwrapper.orig" ]; then
 	# check for the bootstrapper backup of logwrapper, and back that up instead of the bootstrapper file...
 	# *sigh*
@@ -29,6 +34,7 @@ if [ ! -f "/system/bin/logwrapper.orig" ]; then
 		cp /system/bin/logwrapper /system/bin/logwrapper.orig >> $LOGFILE
 	fi
 fi
+
 rm /system/bin/logwrapper >> $LOGFILE
 cp $INSTALLPATH/install-files/system/bin/logwrapper /system/bin >> $LOGFILE
 toolbox chown root.shell /system/bin/logwrapper >> $LOGFILE
@@ -45,6 +51,7 @@ cp $INSTALLPATH/install-files/system/xbin/taskset /system/xbin >> $LOGFILE
 toolbox chown root.shell /system/xbin/taskset >> $LOGFILE
 toolbox chmod 755 /system/xbin/taskset >> $LOGFILE
 
+# we create symlinks for cp and mount in xbin for the bootup into 2nd-init
 if [ -f "/system/xbin/cp" ]; then
 	rm /system/xbin/cp >> $LOGFILE
 fi
@@ -55,6 +62,7 @@ if [ -f "/system/xbin/mount" ]; then
 fi
 ln -s $busybox_loc /system/xbin/mount
 
+# if the user doesn't have an /etc/rootfs dir we setup these as defaults for ROM booting.
 if [ ! -d "/system/etc/rootfs" ]; then
 	mkdir /system/etc/rootfs
 	toolbox chown root.shell /system/etc/rootfs >> $LOGFILE
@@ -63,14 +71,15 @@ if [ ! -d "/system/etc/rootfs" ]; then
 	toolbox chown root.shell /system/etc/rootfs/* >> $LOGFILE
 	toolbox chmod 644 /system/etc/rootfs/* >> $LOGFILE
 fi
-
-#remount /system ro
 toolbox mount -o ro,remount /dev/null /system >> $LOGFILE
 
+
 toolbox mount -o remount,rw /dev/null /preinstall >> $LOGFILE
+# delete any existing /preinstall/recovery dir
 if [ -d "/preinstall/recovery" ]; then
 	/system/bin/rm -r /preinstall/recovery >> $LOGFILE
 fi
+# extract the new recovery dir to /preinstall
 busybox cp -R $INSTALLPATH/install-files/preinstall/recovery /preinstall >> $LOGFILE
 toolbox mount -o ro,remount /dev/null /preinstall >> $LOGFILE
 
