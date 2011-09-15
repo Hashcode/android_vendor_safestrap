@@ -1,5 +1,14 @@
 #!/system/bin/sh
+# By Hashcode
+# Version: 0.82
 PATH=/system/bin:/system/xbin
+LOGFILE=/data/action-install.log
+INSTALLPATH=$1
+
+echo "install path=$INSTALLPATH/install-files" > $LOGFILE
+if [ -d install-files ]; then
+	rm -r $INSTALLPATH/install-files >> $LOGFILE
+fi
 
 busybox_loc=`busybox which busybox`
 if [ ! -f "$busybox_loc" ]; then
@@ -7,46 +16,61 @@ if [ ! -f "$busybox_loc" ]; then
 	exit
 fi
 
-if [ -d install-files ]; then
-	rm -r install-files
-fi
-$busybox_loc tar -zxf install-files.tar.gz
-toolbox mount -o remount,rw /dev/null /system
+$INSTALLPATH/busybox tar -xf $INSTALLPATH/install-files.tar -C $INSTALLPATH >> $LOGFILE
+
+toolbox mount -o remount,rw /dev/null /system >> $LOGFILE
+
 if [ ! -f "/system/bin/logwrapper.orig" ]; then
-	cp /system/bin/logwrapper /system/bin/logwrapper.orig
+	# check for the bootstrapper backup of logwrapper, and back that up instead of the bootstrapper file...
+	# *sigh*
+	if [ -f "/system/bin/logwrapper.bin" ]; then
+		cp /system/bin/logwrapper.bin /system/bin/logwrapper.orig >> $LOGFILE
+	else
+		cp /system/bin/logwrapper /system/bin/logwrapper.orig >> $LOGFILE
+	fi
 fi
-cp install-files/system/bin/logwrapper /system/bin
-chown root.shell /system/bin/logwrapper
-chmod 755 /system/bin/logwrapper
-cp install-files/system/bin/2nd-init /system/bin
-chown root.shell /system/bin/2nd-init
-chmod 755 /system/bin/2nd-init
+rm /system/bin/logwrapper >> $LOGFILE
+cp $INSTALLPATH/install-files/system/bin/logwrapper /system/bin >> $LOGFILE
+toolbox chown root.shell /system/bin/logwrapper >> $LOGFILE
+toolbox chmod 755 /system/bin/logwrapper >> $LOGFILE
+
+cp $INSTALLPATH/install-files/system/bin/2nd-init /system/bin >> $LOGFILE
+toolbox chown root.shell /system/bin/2nd-init >> $LOGFILE
+toolbox chmod 755 /system/bin/2nd-init >> $LOGFILE
+
 if [ -f "/system/xbin/taskset" ]; then
-	rm /system/xbin/taskset
+	rm /system/xbin/taskset >> $LOGFILE
 fi
-cp install-files/system/xbin/taskset /system/xbin
-chown root.shell /system/xbin/taskset
-chmod 755 /system/xbin/taskset
+cp $INSTALLPATH/install-files/system/xbin/taskset /system/xbin >> $LOGFILE
+toolbox chown root.shell /system/xbin/taskset >> $LOGFILE
+toolbox chmod 755 /system/xbin/taskset >> $LOGFILE
+
 if [ -f "/system/xbin/cp" ]; then
-	rm /system/xbin/cp
+	rm /system/xbin/cp >> $LOGFILE
 fi
-ln -s $busybox_loc /system/xbin/cp
+ln -s $busybox_loc /system/xbin/cp >> $LOGFILE
+
 if [ -f "/system/xbin/mount" ]; then
-	rm /system/xbin/mount
+	rm /system/xbin/mount >> $LOGFILE
 fi
 ln -s $busybox_loc /system/xbin/mount
-if [ ! -d "/system/etc/rootfs" ]; then
-	cp -r install-files/system/etc/* /system/etc
-	chown -r root.shell /system/etc/rootfs
-	chmod -r 644 /system/etc/rootfs
-fi
-toolbox mount -o ro,remount /dev/null /system
 
-toolbox mount -o remount,rw /dev/null /preinstall
-if [ -d "/preinstall/recovery" ]; then
-	/system/bin/rm -r /preinstall/recovery
+if [ ! -d "/system/etc/rootfs" ]; then
+	mkdir /system/etc/rootfs
+	toolbox chown root.shell /system/etc/rootfs >> $LOGFILE
+	toolbox chmod 644 /system/etc/rootfs >> $LOGFILE
+	cp $INSTALLPATH/install-files/system/etc/rootfs/* /system/etc/rootfs >> $LOGFILE
+	toolbox chown root.shell /system/etc/rootfs/* >> $LOGFILE
+	toolbox chmod 644 /system/etc/rootfs/* >> $LOGFILE
 fi
-cp -r install-files/preinstall/recovery /preinstall
-$busybox_loc touch /data/.recovery_mode
-toolbox mount -o ro,remount /dev/null /preinstall
+
+#remount /system ro
+toolbox mount -o ro,remount /dev/null /system >> $LOGFILE
+
+toolbox mount -o remount,rw /dev/null /preinstall >> $LOGFILE
+if [ -d "/preinstall/recovery" ]; then
+	/system/bin/rm -r /preinstall/recovery >> $LOGFILE
+fi
+busybox cp -R $INSTALLPATH/install-files/preinstall/recovery /preinstall >> $LOGFILE
+toolbox mount -o ro,remount /dev/null /preinstall >> $LOGFILE
 

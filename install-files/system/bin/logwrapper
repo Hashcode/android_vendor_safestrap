@@ -1,95 +1,102 @@
 #!/system/bin/sh
-
+# By: Hashcode and Edgan
+# Version: 0.82
 PATH=/system/xbin:/system/bin
 OLDINITRC=/init.rc
-REC_FILE=/data/.recovery_mode
+REC_FILE=/preinstall/recovery/.recovery_mode
 RECOVERY_DIR=/preinstall/recovery
-bootmode=$(getprop ro.bootmode)
-
-/system/bin/logwrapper.orig "$@"
+BOOTMODE=$(getprop ro.bootmode)
+MOUNTED_PREINSTALL=0
+BOOTRECOVERY=0
 
 #modes: ap-bp-bypass, bp-tools
-if [ "$bootmode" = "bp-tools" ] && [ -f "$REC_FILE" ] && [ -d "$RECOVERY_DIR" ]; then
-	echo "bootmode is: $bootmode" >>/data/debug 2>&1
-#	used to remove the /data/.recovery_mode file, but its just a failsafe.
+if [ "$BOOTMODE" = "bp-tools" ]; then
+	if [ ! -d "$RECOVERY_DIR" ]; then
+		# mount preinstall
+		MOUNTED_PREINSTALL=1
+		mount -t ext3 /dev/block/preinstall /preinstall
+	fi
+	if [ -f "$REC_FILE" ]; then
+		BOOTRECOVERY=1
+	fi
+	# check for .recovery_mode file and recovery dir
+	if [ "$BOOTRECOVERY" = "0" ]; then
+		if [ "$MOUNTED_PREINSTALL" = "1" ]; then
+			busybox umount /preinstall
+		fi
+		/system/bin/logwrapper.orig "$@"
+		exit
+	fi
 
 	# mount rootfs writeable
-	mount -o remount,rw rootfs >>/data/debug 2>&1
+	mount -o remount,rw rootfs
 
 	# recreate /tmp where it's not a symlink
-	rm /tmp >>/data/debug 2>&1
-	mkdir /tmp >>/data/debug 2>&1
-	chmod 755 /tmp >>/data/debug 2>&1
+	rm /tmp
+	mkdir /tmp
+	chmod 755 /tmp
 
 	# recreate /etc where it's not a symlink
-	rm /etc >>/data/debug 2>&1
-	mkdir /etc >>/data/debug 2>&1
-	chmod 755 /etc >>/data/debug 2>&1
+	rm /etc
+	mkdir /etc
+	chmod 755 /etc
 
 	# make /res directories
-	mkdir /res >>/data/debug 2>&1
-	chmod 755 /res >>/data/debug 2>&1
-	mkdir /res/images >>/data/debug 2>&1
-	chmod 755 /res/images >>/data/debug 2>&1
+	mkdir /res
+	chmod 755 /res
+	mkdir /res/images
+	chmod 755 /res/images
 
-	rm /sdcard >>/data/debug 2>&1
-	rm /sdcard-ext >>/data/debug 2>&1
-	rm -r /mnt >>/data/debug 2>&1
-	rm /vendor >>/data/debug 2>&1
-	rm /d >>/data/debug 2>&1
+	rm /sdcard
+	rm /sdcard-ext
+	rm -r /mnt
+	rm /vendor
+	rm /d
 	
 	# move apps into /tmp for execution later
-	cp /system/xbin/taskset /sbin >>/data/debug 2>&1
-	cp /system/bin/sync /sbin >>/data/debug 2>&1
-	cp /system/bin/2nd-init /sbin >>/data/debug 2>&1
+	cp /system/xbin/taskset /sbin
+	cp /system/bin/sync /sbin
+	cp /system/bin/2nd-init /sbin
 
 	# setup rootfs
-	mv /sbin/adbd /sbin/adbd.old >>/data/debug 2>&1
-	cp $RECOVERY_DIR/* / >>/data/debug 2>&1
-	cp $RECOVERY_DIR/etc/* /etc >>/data/debug 2>&1
-	cp $RECOVERY_DIR/res/* /res >>/data/debug 2>&1
-	cp $RECOVERY_DIR/res/images/* /res/images >>/data/debug 2>&1
-	cp $RECOVERY_DIR/sbin/* /sbin >>/data/debug 2>&1
-	chmod 755 /sbin/* >>/data/debug 2>&1
-	cd /sbin >>/data/debug 2>&1
-	ln -s recovery busybox >>/data/debug 2>&1
-	ln -s recovery dump_image >>/data/debug 2>&1
-	ln -s recovery edify >>/data/debug 2>&1
-	ln -s recovery erase_image >>/data/debug 2>&1
-	ln -s recovery flash_image >>/data/debug 2>&1
-	ln -s recovery mkyaffs2image >>/data/debug 2>&1
-	ln -s recovery nandroid >>/data/debug 2>&1
-	ln -s recovery reboot >>/data/debug 2>&1
-	ln -s recovery unyaffs >>/data/debug 2>&1
-	ln -s recovery volume >>/data/debug 2>&1
-	for file in `./busybox --list`; do ln -s busybox "$file"; done >>/data/debug 2>&1
+	mv /sbin/adbd /sbin/adbd.old
+	cp $RECOVERY_DIR/* /
+	cp $RECOVERY_DIR/etc/* /etc
+	cp $RECOVERY_DIR/res/* /res
+	cp $RECOVERY_DIR/res/images/* /res/images
+	cp $RECOVERY_DIR/sbin/* /sbin
+	chmod 755 /sbin/*
+	cd /sbin
+	ln -s recovery busybox
+	ln -s recovery dump_image
+	ln -s recovery edify
+	ln -s recovery erase_image
+	ln -s recovery flash_image
+	ln -s recovery mkyaffs2image
+	ln -s recovery nandroid
+	ln -s recovery reboot
+	ln -s recovery unyaffs
+	ln -s recovery volume
+	for file in `./busybox --list`; do ln -s busybox "$file"; done
 
 	/sbin/umount /preinstall
-	/sbin/busybox ls -l / >>/data/debug 2>&1
-	/sbin/busybox ls -l /sbin >>/data/debug 2>&1
-	/sbin/busybox ls -l /etc >>/data/debug 2>&1
 	/sbin/umount /data
-#			/sbin/umount /system
+	/sbin/umount /system
 	/sbin/taskset -p -c 0 1
 	/sbin/sync
-	/sbin/taskset -c 0 /system/bin/2nd-init
+	/sbin/taskset -c 0 /sbin/2nd-init
 	exit
 # // disabling 2nd-init for now
 #	else
-#		echo "didnt find .recovery_mode" >>/data/debug 2>&1
-#		NEWINITRC=/system/etc/rootfs/init.rc
-#		OLDCDMARC=/system/etc/rootfs/init.mapphone_cdma.rc
-#		OLDGSMRC=/system/etc/rootfs/init.mapphone_umts.rc
-#		OLDMD5=`cat $OLDINITRC | md5sum`
-#		NEWMD5=`cat $NEWINITRC | md5sum`
-#		if [ "$OLDMD5" != "$NEWMD5" ]; then
-#			mount -o remount,rw rootfs / >>/data/debug 2>&1
-#			cp -p $NEWINITRC / >>/data/debug 2>&1
-#			cp -p $OLDCDMARC / >>/data/debug 2>&1
-#			cp -p $OLDGSMRC / >>/data/debug 2>&1
+#			mount -o remount,rw rootfs /
+#			cp -p $NEWINITRC /
+#			cp -p $OLDCDMARC /
+#			cp -p $OLDGSMRC /
 #			taskset -p -c 0 1
 #			sync
 #			taskset -c 0 /system/bin/2nd-init
 #		fi
 fi
+
+/system/bin/logwrapper.orig "$@"
 

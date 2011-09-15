@@ -7,17 +7,12 @@ on init
     export ANDROID_DATA /data
     export EXTERNAL_STORAGE /sdcard
 
+    symlink /system/etc /etc
 
-	/sbin/umount /system
-    mkdir /boot
     mkdir /sdcard
-    mkdir /sd-ext
-    mkdir /datadata
-    mkdir /emmc
-#    mkdir /system
-#    symlink /system/etc /etc
-#    mkdir /data
-#    mkdir /cache
+    mkdir /system
+    mkdir /data
+    mkdir /cache
     mount /tmp /tmp tmpfs
 
 on boot
@@ -41,3 +36,4 @@ on property:persist.service.adb.enable=1
 
 on property:persist.service.adb.enable=0
     stop adbd
+
