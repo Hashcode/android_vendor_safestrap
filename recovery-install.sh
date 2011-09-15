@@ -1,24 +1,24 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.83
+# Version: 0.85
 PATH=/system/bin:/system/xbin
 LOGFILE=/data/action-install.log
 INSTALLPATH=$1
 
 echo "install path=$INSTALLPATH/install-files" > $LOGFILE
-if [ -d install-files ]; then
+if [ -d $INSTALLPATH/install-files ]; then
 	rm -r $INSTALLPATH/install-files >> $LOGFILE
 fi
 
 busybox_loc=`busybox which busybox`
 if [ ! -f "$busybox_loc" ]; then
-	echo 'Busybox required for this installation.  Please copy install-files/system/bin/busybox to your PATH.  Installation aborted.'
+	echo 'Busybox required for this installation.  Please copy install-files/system/bin/busybox to your PATH.  Installation aborted.' >> $LOGFILE
 	exit
 fi
 
 $INSTALLPATH/busybox tar -xf $INSTALLPATH/install-files.tar -C $INSTALLPATH >> $LOGFILE
-if [ ! -d install-files ]; then
-	echo 'Error extracting tar file.  Aborting.'
+if [ ! -d $INSTALLPATH/install-files ]; then
+	echo 'Error extracting tar file.  Aborting.' >> $LOGFILE
 	exit
 fi
 
