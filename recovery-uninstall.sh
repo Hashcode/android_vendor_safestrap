@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.85
+# Version: 0.86
 PATH=/system/bin:/system/xbin
 LOGFILE=/data/action-uninstall.log
 
