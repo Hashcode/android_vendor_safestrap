@@ -13,22 +13,22 @@ fi
 
 busybox_loc = `command -v busybox`
 command -v busybox >/dev/null && busybox_check=1 || busybox_check=0
-if [ ! "$busybox_check"="1" ]; then
+if [ ! "$busybox_check" -eq "1" ]; then
 	echo "ERR: Busybox required for this installation.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 command -v busybox rm >/dev/null && busybox_check=1 || busybox_check=0
-if [ ! "$busybox_check"="1" ]; then
+if [ ! "$busybox_check" -eq "1" ]; then
 	echo "ERR: Your busybox does not contain the \"rm\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 command -v busybox ln >/dev/null && busybox_check=1 || busybox_check=0
-if [ ! "$busybox_check"="1" ]; then
+if [ ! "$busybox_check" -eq "1" ]; then
 	echo "ERR: Your busybox does not contain the \"ln\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 command -v busybox umount >/dev/null && busybox_check=1 || busybox_check=0
-if [ ! "$busybox_check"="1" ]; then
+if [ ! "$busybox_check" -eq "1" ]; then
 	echo "ERR: Your busybox does not contain the \"umount\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi

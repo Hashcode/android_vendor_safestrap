@@ -26,7 +26,7 @@ fi
 if [ -f "$DESTMOUNT/etc/recovery/flags/recovery_mode" ]; then
 	recmode=`$INSTALLPATH/busybox cat $DESTMOUNT/etc/recovery/flags/recovery_mode`
 fi
-if [ -f "$DESTMOUNT/etc/recovery/flags/alt_boot_mode" ]; then
+if [ -f "$DESTMOUNT/etc/recovery/flags/alt_system_mode" ]; then
 	altbootmode=1
 fi
 echo "$vers:$recmode:$altbootmode"

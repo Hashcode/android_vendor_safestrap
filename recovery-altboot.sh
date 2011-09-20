@@ -19,12 +19,17 @@ else
 	$INSTALLPATH/busybox mount -o remount,rw $DESTMOUNT
 fi
 
-if [ "$FILEMODE"="1" ]; then
+echo $DESTMOUNT
+echo "$FILEMODE"
+if [ "$FILEMODE" -eq "1" ]; then
+	echo create
 	# create
-	$INSTALLPATH/busybox touch $DESTMOUNT/etc/recovery/flags/altbootmode
+	$INSTALLPATH/busybox touch $DESTMOUNT/etc/recovery/flags/alt_system_mode
+	$INSTALLPATH/busybox chmod 644 $DESTMOUNT/etc/recovery/flags/alt_system_mode
 else
+	echo delete
 	# delete
-	$INSTALLPATH/busybox rm $DESTMOUNT/etc/recovery/flags/altbootmode
+	$INSTALLPATH/busybox rm $DESTMOUNT/etc/recovery/flags/alt_system_mode
 fi
 
 if [ ! "$CURRENTSYS"="$PRIMARYSYS" ]; then

@@ -2,9 +2,9 @@
 # By Hashcode
 # Version: 0.88
 PATH=/system/bin:/system/xbin
-LOGFILE=/data/action-uninstall.log
 INSTALLPATH=$1
 PRIMARYSYS=/dev/block/mmcblk1p21
+LOGFILE=$INSTALLPATH/action-uninstall.log
 
 echo '' > $LOGFILE
 
