@@ -2,8 +2,8 @@
 # By Hashcode
 # Version: 0.88
 PATH=/system/bin:/system/xbin
-LOGFILE=/data/action-install.log
 INSTALLPATH=$1
+LOGFILE=$INSTALLPATH/action-install.log
 PRIMARYSYS=/dev/block/mmcblk1p21
 
 echo "install path=$INSTALLPATH/install-files" > $LOGFILE
@@ -14,29 +14,28 @@ fi
 busybox_loc = `command -v busybox`
 command -v busybox >/dev/null && busybox_check=1 || busybox_check=0
 if [ ! "$busybox_check"="1" ]; then
-	echo "Busybox required for this installation.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
+	echo "ERR: Busybox required for this installation.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 command -v busybox rm >/dev/null && busybox_check=1 || busybox_check=0
 if [ ! "$busybox_check"="1" ]; then
-	echo "Busybox does not contain the \"rm\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
+	echo "ERR: Your busybox does not contain the \"rm\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 command -v busybox ln >/dev/null && busybox_check=1 || busybox_check=0
 if [ ! "$busybox_check"="1" ]; then
-	echo "Busybox does not contain the \"ln\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
+	echo "ERR: Your busybox does not contain the \"ln\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 command -v busybox umount >/dev/null && busybox_check=1 || busybox_check=0
 if [ ! "$busybox_check"="1" ]; then
-	echo "Busybox does not contain the \"umount\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
+	echo "ERR: Your busybox does not contain the \"umount\" applet.  Please copy $INSTALLPATH/install-files/system/bin/busybox to your PATH.  Installation aborted." >> $LOGFILE
 	exit 1
 fi
 
-chmod 755 $INSTALLPATH/busybox
 $INSTALLPATH/busybox tar -xf $INSTALLPATH/install-files.tar -C $INSTALLPATH >> $LOGFILE
 if [ ! -d $INSTALLPATH/install-files ]; then
-	echo 'Error extracting tar file.  Aborting.' >> $LOGFILE
+	echo 'ERR: Tar file didnt extract correctly.  Installation aborted.' >> $LOGFILE
 	exit 1
 fi
 
@@ -66,7 +65,7 @@ if [ ! -f "$DESTMOUNT/bin/logwrapper.orig" ]; then
 		$INSTALLPATH/busybox cp $DESTMOUNT/bin/logwrapper $DESTMOUNT/bin/logwrapper.orig >> $LOGFILE
 	fi
 fi
-$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/system/bin/logwrapper $DESTMOUNT/bin >> $LOGFILE
+$INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/logwrapper $DESTMOUNT/bin >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 
@@ -75,11 +74,11 @@ $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 if [ ! -f "$DESTMOUNT/bin/loadpreinstalls.sh.bak" ]; then
 	$INSTALLPATH/busybox cp $DESTMOUNT/bin/loadpreinstalls.sh $DESTMOUNT/bin/loadpreinstalls.sh.bak >> $LOGFILE
 fi
-$INSTALLPATH/busybox cp $INSTALLPATH/install-files/system/bin/loadpreinstall.sh $DESTMOUNT/bin >> $LOGFILE
+$INSTALLPATH/busybox cp $INSTALLPATH/install-files/bin/loadpreinstall.sh $DESTMOUNT/bin >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
 
-$INSTALLPATH/busyboxcp $INSTALLPATH/install-files/system/bin/update-binary $DESTMOUNT/bin >> $LOGFILE
+$INSTALLPATH/busybox cp $INSTALLPATH/install-files/bin/update-binary $DESTMOUNT/bin >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/update-binary >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/update-binary >> $LOGFILE
 
@@ -100,7 +99,6 @@ if [ -d "$DESTMOUNT/etc/recovery" ]; then
 fi
 # extract the new recovery dir to /preinstall
 $INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/recovery $DESTMOUNT/etc >> $LOGFILE
-
 sync
 
 # determine our active system, and umount/remount accordingly

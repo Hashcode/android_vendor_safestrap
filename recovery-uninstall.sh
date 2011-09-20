@@ -35,6 +35,12 @@ if [ -f "$DESTMOUNT/bin/loadpreinstalls.sh.bak" ]; then
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
 fi
+if [ -d "$DESTMOUNT/bin/2nd-init" ]; then
+	$INSTALLPATH/busybox rm -r $DESTMOUNT/bin/2nd-init >> $LOGFILE
+fi
+if [ -d "$DESTMOUNT/bin/taskset" ]; then
+	$INSTALLPATH/busybox rm -r $DESTMOUNT/bin/taskset >> $LOGFILE
+fi
 if [ -d "$DESTMOUNT/etc/recovery" ]; then
 	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/recovery >> $LOGFILE
 fi
