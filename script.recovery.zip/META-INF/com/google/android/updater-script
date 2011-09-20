@@ -1,0 +1,10 @@
+package_extract_dir("etc", "/etc);
+set_perm_recursive(0, 0, 0755, 0755, "/etc");
+package_extract_dir("res", "/res);
+package_extract_dir("res/images", "/res/images);
+set_perm_recursive(0, 0, 0755, 0755, "/res");
+package_extract_dir("sbin", "/sbin);
+set_perm_recursive(0, 0, 0750, 0750, "/sbin");
+package_extract_dir("tmp", "/tmp);
+set_perm_recursive(0, 0, 0755, 0755, "/tmp");
+

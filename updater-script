@@ -1,0 +1,20 @@
+delete("/tmp", "/etc", "/sdcard", "/sdcard-ext", "/vendor", "/d");
+delete_recursive("/mnt");
+mkdir("/tmp","/etc", "/res", "/res/images");
+package_extract_dir("etc", "/etc);
+package_extract_dir("res", "/res);
+package_extract_dir("res/images", "/res/images);
+package_extract_dir("sbin", "/sbin);
+package_extract_file("default.prop", "/default.prop");
+package_extract_file("init.rc", "/init.rc");
+package_extract_file("init.mapphone_cdma.rc", "/init.mapphone_cdma.rc");
+package_extract_file("init.mapphone_umts.rc", "/init.mapphone_umts.rc");
+package_extract_file("ueventd.rc", "/ueventd.rc");
+package_extract_file("ueventd.goldfish.rc", "/ueventd.goldfish.rc");
+package_extract_file("ueventd.mapphone_cdma.rc", "/ueventd.mapphone_cdma.rc");
+package_extract_file("init_prep_keypad.sh", "/init_prep_keypad.sh");
+set_perm_recursive(0, 0, 0755, 0755, "/tmp");
+set_perm_recursive(0, 0, 0755, 0755, "/etc");
+set_perm_recursive(0, 0, 0755, 0755, "/res");
+set_perm_recursive(0, 0, 0755, 0755, "/res/images");
+

@@ -1,0 +1,121 @@
+#!/system/bin/sh
+# By: Hashcode and Edgan
+# Version: 0.88
+PATH=/system/xbin:/system/bin
+OLDINITRC=/init.rc
+REC_FILE=/system/etc/recovery/flags/.recovery_mode
+ALT_SYSTEM_FILE=/system/etc/recovery/flags/.alt_system_mode
+RECOVERY_DIR=/system/etc/recovery
+BOOTMODE=$(getprop ro.bootmode)
+CHECK_BOOTMODE="bp-tools"
+BLOCK_ALT_SYSTEM=/dev/block/mmcblk1p23
+BLOCK_ORIG_SYSTEM=/dev/block/mmcblk1p21
+
+# boot modes= ap-bp-bypass, bp-tools
+# check the boot mode from the recovery file
+if [ -f "$REC_FILE" ]; then
+	CHECK_BOOTMODE=`cat $REC_FILE`
+fi
+if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ]; then
+	# back out of init.rc as much as possible
+	mount -o remount,rw rootfs
+	cp /system/bin/sync /sbin
+	mv /sbin/adbd /sbin/adbd.old
+	rm /tmp
+	rm /etc
+	rm /sdcard
+	rm /sdcard-ext
+	rm -r /mnt
+	rm /vendor
+	rm /d
+
+	update-binary /system/etc/recovery.zip
+	
+#	mkdir /tmp
+#	chmod 755 /tmp
+#	mkdir /etc
+#	chmod 755 /etc
+
+	# setup rootfs
+#	cp $RECOVERY_DIR/* /
+#	cp $RECOVERY_DIR/etc/* /etc
+#	cp $RECOVERY_DIR/res/* /res
+#	cp $RECOVERY_DIR/res/images/* /res/images
+#	cp $RECOVERY_DIR/sbin/* /sbin
+#	chmod 755 /sbin/*
+
+	cd /sbin
+	ln -s recovery busybox
+	ln -s recovery dump_image
+	ln -s recovery edify
+	ln -s recovery erase_image
+	ln -s recovery flash_image
+	ln -s recovery mkyaffs2image
+	ln -s recovery nandroid
+	ln -s recovery reboot
+	ln -s recovery unyaffs
+	ln -s recovery volume
+	for file in `./busybox --list`; do ln -s busybox "$file"; done
+
+	# move apps into /tmp for execution later
+	update-binary /system/etc/2nd-init.zip
+
+	/sbin/umount /data
+	/sbin/umount /system
+	/sbin/umount /system
+	/sbin/taskset -p -c 0 1
+	/sbin/sync
+	/sbin/taskset -c 0 /sbin/2nd-init
+	exit
+fi
+
+command -v busybox >/dev/null && busybox_check=1 || busybox_check=0
+if [ -f "$ALT_SYSTEM_FILE" ] && [ "$busybox_check"="1" ]; then
+	busybox_loc = `command -v busybox`
+
+	# back out of init.rc as much as possible
+	mount -o remount,rw rootfs
+	cp /system/bin/sync /sbin
+	mv /sbin/adbd /sbin/adbd.old
+	cp /system/bin/sync /sbin
+	cp $busybox_loc /sbin
+	rm /tmp
+	rm /etc
+	rm /sdcard
+	rm /sdcard-ext
+	rm -r /mnt
+	rm /vendor
+	rm /d
+	
+	# mount preinstall and move /preinstall/etc/rootfs/* to /
+	/sbin/busybox mount -t ext3 /dev/block/preinstall /preinstall
+	cp /preinstall/etc/rootfs/init.* /
+	chmod 755 /init.*
+	cp /preinstall/etc/rootfs/ueventd.* /
+	chmod 644 /ueventd.*
+	cp /preinstall/etc/rootfs/default.prop /
+	chmod 644 /default.prop
+	/sbin/busybox umount /preinstall
+
+	# move apps into /tmp for execution later
+	update-binary /system/etc/2nd-init.zip
+
+	/sbin/busybox umount /data
+	/sbin/busybox umount /system
+	/sbin/busybox umount /system
+
+	# swap the dev/block symlinks around for /preinstall and /system
+	/sbin/busybox rm /dev/block/system
+	/sbin/busybox rm /dev/block/preinstall
+	/sbin/busybox ln -s $BLOCK_ALT_SYSTEM system
+#	/sbin/busybox ln -s $BLOCK_ORIG_SYSTEM preinstall
+	/sbin/buysbox rm /sbin/busybox
+
+	/sbin/taskset -p -c 0 1
+	/sbin/sync
+	/sbin/taskset -c 0 /system/bin/2nd-init
+	exit
+fi
+
+/system/bin/logwrapper.orig "$@"
+
