@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.88
+# Version: 0.90
 PATH=/system/bin:/system/xbin
 INSTALLPATH=$1
 PRIMARYSYS=/dev/block/mmcblk1p21
@@ -11,7 +11,7 @@ echo '' > $LOGFILE
 chmod 755 $INSTALLPATH/busybox
 CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
 # determine our active system, and mount/remount accordingly
-if [ ! "$CURRENTSYS"="$PRIMARYSYS" ]; then
+if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	# alt-system, needs to mount original /system
 	DESTMOUNT=/data/local/tmp/system
 	if [ ! -d "$DESTMOUNT" ]; then
@@ -31,24 +31,21 @@ if [ -f "$DESTMOUNT/bin/logwrapper.orig" ]; then
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 fi
 if [ -f "$DESTMOUNT/bin/loadpreinstalls.sh.bak" ]; then
-	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/loadpreinstalls.sh.bak $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
-	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
-	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
-fi
-if [ -d "$DESTMOUNT/bin/2nd-init" ]; then
-	$INSTALLPATH/busybox rm -r $DESTMOUNT/bin/2nd-init >> $LOGFILE
-fi
-if [ -d "$DESTMOUNT/bin/taskset" ]; then
-	$INSTALLPATH/busybox rm -r $DESTMOUNT/bin/taskset >> $LOGFILE
+	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/loadpreinstalls.sh.bak $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
+	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
+	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
 fi
 if [ -d "$DESTMOUNT/etc/recovery" ]; then
 	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/recovery >> $LOGFILE
+fi
+if [ -d "$DESTMOUNT/etc/rootfs" ]; then
+	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/rootfs >> $LOGFILE
 fi
 
 sync
 
 # determine our active system, and umount/remount accordingly
-if [ ! "$CURRENTSYS"="$PRIMARYSYS" ]; then
+if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	$INSTALLPATH/busybox umount $DESTMOUNT >> $LOGFILE
 	$INSTALLPATH/busybox rmdir $DESTMOUNT
 else

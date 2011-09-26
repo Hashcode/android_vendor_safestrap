@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.88
+# Version: 0.90
 PATH=/system/bin:/system/xbin
 INSTALLPATH=$1
 LOGFILE=$INSTALLPATH/action-install.log
@@ -41,7 +41,7 @@ fi
 
 CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
 # determine our active system, and mount/remount accordingly
-if [ ! "$CURRENTSYS"="$PRIMARYSYS" ]; then
+if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	# alt-system, needs to mount original /system
 	DESTMOUNT=/data/local/tmp/system
 	if [ ! -d "$DESTMOUNT" ]; then
@@ -78,10 +78,6 @@ $INSTALLPATH/busybox cp $INSTALLPATH/install-files/bin/loadpreinstall.sh $DESTMO
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
 
-$INSTALLPATH/busybox cp $INSTALLPATH/install-files/bin/update-binary $DESTMOUNT/bin >> $LOGFILE
-$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/update-binary >> $LOGFILE
-$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/update-binary >> $LOGFILE
-
 # if the user doesn't have an /etc/rootfs dir we setup these as defaults for ROM booting.
 # these files come preloaded on each rom in /system/etc/rootfs
 #if [ ! -d "$INSTALLPATH/$SYS_MOUNT/etc/rootfs" ]; then
@@ -97,12 +93,17 @@ $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/update-binary >> $LOGFILE
 if [ -d "$DESTMOUNT/etc/recovery" ]; then
 	$INSTALLPATH/busybox rm -rf $DESTMOUNT/etc/recovery >> $LOGFILE
 fi
+# delete any existing /system/etc/recovery dir
+if [ -d "$DESTMOUNT/etc/rootfs" ]; then
+	$INSTALLPATH/busybox rm -rf $DESTMOUNT/etc/rootfs >> $LOGFILE
+fi
 # extract the new recovery dir to /preinstall
 $INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/recovery $DESTMOUNT/etc >> $LOGFILE
+$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/rootfs $DESTMOUNT/etc >> $LOGFILE
 sync
 
 # determine our active system, and umount/remount accordingly
-if [ ! "$CURRENTSYS"="$PRIMARYSYS" ]; then
+if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	$INSTALLPATH/busybox umount $DESTMOUNT >> $LOGFILE
 	$INSTALLPATH/busybox rmdir $DESTMOUNT
 else
