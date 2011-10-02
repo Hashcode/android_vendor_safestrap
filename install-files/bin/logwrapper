@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # By: Hashcode and Edgan
 # hijack.killall: Credit Cyanogenmod, Modified for Busybox
-# Version: 0.90
+# Version: 0.92
 PATH=/system/xbin:/system/bin
 REC_FILE=/system/etc/recovery/flags/recovery_mode
 ALT_SYSTEM_FILE=/system/etc/recovery/flags/alt_system_mode
@@ -236,14 +236,6 @@ else
 		mount -o remount,rw rootfs
 
 		mv /sbin/adbd /sbin/adbd.old
-		rm /etc
-		rm /sdcard
-		rm /sdcard-ext
-		rm -r /mnt
-		rm -r /acct
-		rm /vendor
-		rm /d
-		mkdir /bootlog
 
 		busybox unzip -o /system/etc/recovery/2nd-init.zip -d /sbin
 		cd /sbin
@@ -262,11 +254,18 @@ else
 		/sbin/busybox umount -l /system
 
 		/sbin/hijack.killall
-		/sbin/rm -r /acct
-		/sbin/rm -r /dev/cpuctl
+
+		# mount/symlink point cleanup
+		/sbin/rm /sdcard
+		/sbin/rm /sdcard-ext
+		/sbin/rmdir /osh
+		/sbin/rm -r /mnt
+		/sbin/rm /vendor
+		/sbin/rm /d
 
 		/sbin/taskset -p -c 0 1
 		/sbin/busybox sync
+
 		/sbin/taskset -c 0 /sbin/2nd-init
 		exit
 	fi

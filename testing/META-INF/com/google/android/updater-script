@@ -1,5 +1,0 @@
-package_extract_file("2nd-init", "sbin/2nd-init");
-package_extract_file("taskset", "sbin/taskset");
-package_extract_file("hijack.killall", "sbin/hijack.killall");
-set_perm_recursive(0, 0, 0750, 0750, "sbin");
-
