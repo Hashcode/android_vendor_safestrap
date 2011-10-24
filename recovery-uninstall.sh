@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.90
+# Version: 0.92
 PATH=/system/bin:/system/xbin
 INSTALLPATH=$1
 PRIMARYSYS=/dev/block/mmcblk1p21
@@ -25,8 +25,8 @@ else
 	$INSTALLPATH/busybox mount -o remount,rw $DESTMOUNT >> $LOGFILE
 fi
 
-if [ -f "$DESTMOUNT/bin/logwrapper.orig" ]; then
-	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/logwrapper.orig $DESTMOUNT/bin/logwrapper >> $LOGFILE
+if [ -f "$DESTMOUNT/bin/logwrapper.bin" ]; then
+	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/logwrapper.bin $DESTMOUNT/bin/logwrapper >> $LOGFILE
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 fi

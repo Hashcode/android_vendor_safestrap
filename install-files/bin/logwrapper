@@ -12,7 +12,7 @@ BOOTMODE=$(getprop ro.bootmode)
 CHECK_BOOTMODE="bp-tools"
 
 if [ "$HIJACKED" -eq "1" ]; then
-	/system/bin/logwrapper.orig "$@"
+	/system/bin/logwrapper.bin "$@"
 	exit
 fi
 
@@ -271,5 +271,5 @@ else
 	fi
 fi
 
-/system/bin/logwrapper.orig "$@"
+/system/bin/logwrapper.bin "$@"
 

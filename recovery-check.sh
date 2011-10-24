@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.90
+# Version: 0.92
 PATH=/system/bin:/system/xbin
 INSTALLPATH=$1
 PRIMARYSYS=/dev/block/mmcblk1p21

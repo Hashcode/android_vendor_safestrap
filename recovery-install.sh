@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.90
+# Version: 0.92
 PATH=/system/bin:/system/xbin
 INSTALLPATH=$1
 LOGFILE=$INSTALLPATH/action-install.log
@@ -55,16 +55,18 @@ else
 	$INSTALLPATH/busybox mount -o remount,rw $DESTMOUNT >> $LOGFILE
 fi
 
-# check for a logwrapper.orig file and if there isn't one make a backup
-if [ ! -f "$DESTMOUNT/bin/logwrapper.orig" ]; then
-	# check for the bootstrapper backup of logwrapper, and back that up instead of the bootstrapper file...
-	# *sigh*
-	if [ -f "$DESTMOUNT/bin/logwrapper.bin" ]; then
-		$INSTALLPATH/busybox cp $DESTMOUNT/bin/logwrapper.bin $DESTMOUNT/bin/logwrapper.orig >> $LOGFILE
-	else
-		$INSTALLPATH/busybox cp $DESTMOUNT/bin/logwrapper $DESTMOUNT/bin/logwrapper.orig >> $LOGFILE
-	fi
+# check for a logwrapper.orig file and clean it up
+if [ -f "$DESTMOUNT/bin/logwrapper.orig" ]; then
+	$INSTALLPATH/busybox rm $DESTMOUNT/bin/logwrapper >> $LOGFILE
+	$INSTALLPATH/busybox cp $DESTMOUNT/bin/logwrapper.orig $DESTMOUNT/bin/logwrapper >> $LOGFILE
+	$INSTALLPATH/busybox rm $DESTMOUNT/bin/logwrapper.orig >> $LOGFILE
 fi
+# check for a logwrapper.bin file and its not there, make a copy
+if [ ! -f "$DESTMOUNT/bin/logwrapper.bin" ]; then
+	$INSTALLPATH/busybox cp $DESTMOUNT/bin/logwrapper $DESTMOUNT/bin/logwrapper.bin >> $LOGFILE
+fi
+$INSTALLPATH/busybox rm $DESTMOUNT/bin/logwrapper >> $LOGFILE
+$INSTALLPATH/busybox rm $DESTMOUNT/bin/hijack >> $LOGFILE
 $INSTALLPATH/busybox cp -f $INSTALLPATH/install-files/bin/logwrapper $DESTMOUNT/bin >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
@@ -74,9 +76,9 @@ $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 if [ ! -f "$DESTMOUNT/bin/loadpreinstalls.sh.bak" ]; then
 	$INSTALLPATH/busybox cp $DESTMOUNT/bin/loadpreinstalls.sh $DESTMOUNT/bin/loadpreinstalls.sh.bak >> $LOGFILE
 fi
-$INSTALLPATH/busybox cp $INSTALLPATH/install-files/bin/loadpreinstall.sh $DESTMOUNT/bin >> $LOGFILE
-$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
-$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstall.sh >> $LOGFILE
+$INSTALLPATH/busybox cp $INSTALLPATH/install-files/bin/loadpreinstalls.sh $DESTMOUNT/bin >> $LOGFILE
+$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
+$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
 
 # if the user doesn't have an /etc/rootfs dir we setup these as defaults for ROM booting.
 # these files come preloaded on each rom in /system/etc/rootfs
