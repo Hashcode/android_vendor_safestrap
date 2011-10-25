@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.92
+# Version: 0.93
 PATH=/system/bin:/system/xbin
 INSTALLPATH=$1
 PRIMARYSYS=/dev/block/mmcblk1p21
@@ -34,6 +34,9 @@ if [ -f "$DESTMOUNT/bin/loadpreinstalls.sh.bak" ]; then
 	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/loadpreinstalls.sh.bak $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
+fi
+if [ -d "$DESTMOUNT/etc/safestrap" ]; then
+	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/safestrap >> $LOGFILE
 fi
 if [ -d "$DESTMOUNT/etc/recovery" ]; then
 	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/recovery >> $LOGFILE
