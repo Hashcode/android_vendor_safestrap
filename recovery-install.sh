@@ -77,7 +77,7 @@ if [ -d "$DESTMOUNT/etc/rootfs" ]; then
 	$INSTALLPATH/busybox rm -rf $DESTMOUNT/etc/rootfs >> $LOGFILE
 fi
 # extract the new dirs to /system
-$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/safestrap $DESTMOUNT/etc >> $LOGFILE
+$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/safestrap $DESTMOUNT/etc >> $LOGFILE
 $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/etc/safestrap/* >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/etc/safestrap/* >> $LOGFILE
 $INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/recovery $DESTMOUNT/etc >> $LOGFILE
