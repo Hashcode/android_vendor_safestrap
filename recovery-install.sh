@@ -33,9 +33,9 @@ if [ ! "$busybox_check" -eq "1" ]; then
 	exit 1
 fi
 
-$INSTALLPATH/busybox tar -xf $INSTALLPATH/install-files.zip -C $INSTALLPATH >> $LOGFILE
+$INSTALLPATH/busybox unzip $INSTALLPATH/install-files.zip  -d $INSTALLPATH >> $LOGFILE
 if [ ! -d $INSTALLPATH/install-files ]; then
-	echo 'ERR: Tar file didnt extract correctly.  Installation aborted.' >> $LOGFILE
+	echo 'ERR: Zip file didnt extract correctly.  Installation aborted.' >> $LOGFILE
 	exit 1
 fi
 
