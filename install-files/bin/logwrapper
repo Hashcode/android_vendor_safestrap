@@ -219,16 +219,13 @@ if [ "$2" = "userdata" ]; then
 		cd /
 
 		busybox unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
-		cd /sbin
-                #ln -s 2nd-init sbox
-		cd /
 		chmod 750 /sbin/*
 
-		/sbin/sbox umount -l /system
+		/sbin/busybox umount -l /system
 		/sbin/hijack.killall
 
 		/sbin/taskset -p -c 0 1
-		/sbin/sbox sync
+		/sbin/busybox sync
 		/sbin/taskset -c 0 /sbin/2nd-init
 		exit
 	fi
@@ -241,34 +238,34 @@ if [ "$2" = "userdata" ]; then
 
 		busybox unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
 		cd /sbin
-                #ln -s 2nd-init sbox
+		ln -s recovery busybox
 		cd /
 		chmod 750 /sbin/*
 
 		# mount preinstall and move /preinstall/etc/rootfs/* to /
-		/sbin/sbox mount -t ext3 /dev/block/mmcblk1p23 /preinstall
+		/sbin/busybox mount -t ext3 /dev/block/mmcblk1p23 /preinstall
 
 		# perform sanity checks on /preinstall
 		# if there's no /preinstall/etc/rootfs/ folder, then copy it from /system
 		if [ -d "/preinstall/etc/rootfs" ]; then
-			/sbin/sbox cp /preinstall/etc/rootfs/* /
+			/sbin/busybox cp /preinstall/etc/rootfs/* /
 		else
-			/sbin/sbox cp /system/etc/rootfs/* /
+			/sbin/busybox cp /system/etc/rootfs/* /
 		fi
 		# check for hijack, and remove
 		if [ -f "/preinstall/bin/logwrapper.bin" ]; then
-			/sbin/sbox rm /preinstall/bin/logwrapper
-			/sbin/sbox mv /preinstall/bin/logwrapper.bin /preinstall/bin/logwrapper
-			/sbin/sbox chmod 755 /preinstall/bin/logwrapper
-			/sbin/sbox chown root.shell /preinstall/bin/logwrapper
+			/sbin/busybox rm /preinstall/bin/logwrapper
+			/sbin/busybox mv /preinstall/bin/logwrapper.bin /preinstall/bin/logwrapper
+			/sbin/busybox chmod 755 /preinstall/bin/logwrapper
+			/sbin/busybox chown root.shell /preinstall/bin/logwrapper
 		fi
 
-		/sbin/sbox chmod 755 /init
-		/sbin/sbox chmod 644 /default.prop
-		/sbin/sbox chmod 755 /*.rc
-		/sbin/sbox umount /preinstall
+		/sbin/busybox chmod 755 /init
+		/sbin/busybox chmod 644 /default.prop
+		/sbin/busybox chmod 755 /*.rc
+		/sbin/busybox umount /preinstall
 
-		/sbin/sbox umount -l /system
+		/sbin/busybox umount -l /system
 
 		/sbin/hijack.killall
 
@@ -281,7 +278,7 @@ if [ "$2" = "userdata" ]; then
 		/sbin/rm /d
 
 		/sbin/taskset -p -c 0 1
-		/sbin/sbox sync
+		/sbin/busybox sync
 		/sbin/taskset -c 0 /sbin/2nd-init
 		exit
 	fi
