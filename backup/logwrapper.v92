@@ -1,18 +1,17 @@
 #!/system/bin/sh
 # By: Hashcode
-# hijack.killall: Credit Cyanogenmod, Modified for Busybox
+# hijack.killall: Credit Koush/Cyanogenmod (Modified for Busybox)
 # Version: 1.0
 PATH=/system/xbin:/system/bin
 REC_FILE=/system/etc/recovery/flags/recovery_mode
 ALT_SYSTEM_FILE=/system/etc/recovery/flags/alt_system_mode
-ALT_SYSTEM_MODE="0"
 RECOVERY_DIR=/system/etc/recovery
 HIJACKED_PROP=ro.hijacked
 HIJACKED=$(getprop $HIJACKED_PROP)
 BOOTMODE=$(getprop ro.bootmode)
 CHECK_BOOTMODE="bp-tools"
 
-if [ "$HIJACKED" = "1" ]; then
+if [ "$HIJACKED" -eq "1" ]; then
 	/system/bin/logwrapper.bin "$@"
 	exit
 fi
@@ -22,13 +21,7 @@ fi
 if [ -f "$REC_FILE" ]; then
 	CHECK_BOOTMODE=`cat $REC_FILE`
 fi
-
-# check for 
-if [ -f "$ALT_SYSTEM_FILE" ] ; then
-	ALT_SYSTEM_MODE="1"
-fi
-
-if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $(/system/etc/safestrap/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
+if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ]; then
 	# back out of init.rc as much as possible
 	mount -o remount,rw rootfs
 
@@ -43,7 +36,7 @@ if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $(/system/etc/safestrap/safestrapmen
 	rm /d
 
 	# move apps into /tmp for execution later
-	busybox unzip -o $RECOVERY_DIR/recovery.zip -d /
+	busybox unzip -o /system/etc/recovery/recovery.zip -d /
 	chmod 755 /etc/*
 	chmod 755 /res/*
 	chmod 755 /res/images/*
@@ -224,7 +217,7 @@ if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $(/system/etc/safestrap/safestrapmen
 	ln -s busybox zcat
 	cd /
 
-	busybox unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+	busybox unzip -o /system/etc/recovery/2nd-init.zip -d /sbin
 
 	chmod 750 /sbin/*
 
@@ -235,59 +228,49 @@ if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $(/system/etc/safestrap/safestrapmen
 	/sbin/busybox sync
 	/sbin/taskset -c 0 /sbin/2nd-init
 	exit
-fi
-if [ -f "$ALT_SYSTEM_FILE" ] ; then
-	setprop $HIJACKED_PROP 1
+else
+	if [ -f "$ALT_SYSTEM_FILE" ] ; then
+		setprop $HIJACKED_PROP 1
 
-	# back out of init.rc as much as possible
-	mount -o remount,rw rootfs
+		# back out of init.rc as much as possible
+		mount -o remount,rw rootfs
 
-	mv /sbin/adbd /sbin/adbd.old
+		mv /sbin/adbd /sbin/adbd.old
 
-	busybox unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
-	cd /sbin
-	ln -s recovery busybox
-	cd /
-	chmod 750 /sbin/*
+		busybox unzip -o /system/etc/recovery/2nd-init.zip -d /sbin
+		cd /sbin
+		ln -s recovery busybox
+		cd /
+		chmod 750 /sbin/*
 
-	# mount preinstall and move /preinstall/etc/rootfs/* to /
-	/sbin/busybox mount -t ext3 /dev/block/mmcblk1p23 /preinstall
+		# mount preinstall and move /preinstall/etc/rootfs/* to /
+		/sbin/busybox mount -t ext3 /dev/block/mmcblk1p23 /preinstall
+		/sbin/busybox cp /preinstall/etc/rootfs/* /
+		/sbin/busybox chmod 755 /init
+		/sbin/busybox chmod 644 /default.prop
+		/sbin/busybox chmod 755 /*.rc
+		/sbin/busybox umount /preinstall
 
-	# perform sanity checks on /preinstall
-	# if there's no /preinstall/etc/rootfs/ folder, then copy it from /system
-	if [ ! -d "/preinstall/etc/rootfs" ]; then
-		/sbin/busybox cp /system/etc/rootfs /preinstall/etc
+		/sbin/busybox umount -l /system
+
+		/sbin/hijack.killall
+
+		# mount/symlink point cleanup
+		/sbin/rm /sdcard
+		/sbin/rm /sdcard-ext
+		/sbin/rmdir /osh
+		/sbin/rm -r /mnt
+		/sbin/rm /vendor
+		/sbin/rm /d
+
+		/sbin/taskset -p -c 0 1
+		/sbin/busybox sync
+
+		/sbin/taskset -c 0 /sbin/2nd-init
+		exit
 	fi
-	# check for hijack
-        if [ -f "/preinstall/bin/logwrapper.bin" ]; then
-		/sbin/busybox cp /preinstall/bin/logwrapper.bin /preinstall/bin/logwrapper
-		/sbin/busybox chmod 755 /preinstall/bin/logwrapper
-		/sbin/busybox chown root.shell /preinstall/bin/logwrapper
-        fi
-
-	/sbin/busybox cp /preinstall/etc/rootfs/* /
-	/sbin/busybox chmod 755 /init
-	/sbin/busybox chmod 644 /default.prop
-	/sbin/busybox chmod 755 /*.rc
-	/sbin/busybox umount /preinstall
-
-	/sbin/busybox umount -l /system
-
-	/sbin/hijack.killall
-
-	# mount/symlink point cleanup
-	/sbin/rm /sdcard
-	/sbin/rm /sdcard-ext
-	/sbin/rmdir /osh
-	/sbin/rm -r /mnt
-	/sbin/rm /vendor
-	/sbin/rm /d
-
-	/sbin/taskset -p -c 0 1
-	/sbin/busybox sync
-	/sbin/taskset -c 0 /sbin/2nd-init
-	exit
 fi
 
 /system/bin/logwrapper.bin "$@"
+
 

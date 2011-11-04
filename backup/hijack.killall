@@ -2,7 +2,7 @@
 PATH=/sbin
 
 ## BEGIN KILL ALL ##
-busybox sleep 5s
+busybox sleep 1s
 
 # kill all services
 for i in $(getprop | busybox grep init.svc | busybox sed -r 's/^\[init\.svc\.(.+)\]:.*$/\1/'); do
