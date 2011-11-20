@@ -1,9 +1,10 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.93
+# Version: 1.06
 PATH=/system/bin:/system/xbin
-INSTALLPATH=$1
+RECOVERY_DIR=/etc/safestrap
 PRIMARYSYS=/dev/block/mmcblk1p21
+INSTALLPATH=$1
 vers=0
 recmode=
 altbootmode=0
@@ -20,13 +21,13 @@ else
 	DESTMOUNT=/system
 fi
 
-if [ -f "$DESTMOUNT/etc/recovery/flags/version" ]; then
-	vers=`$INSTALLPATH/busybox cat $DESTMOUNT/etc/recovery/flags/version`
+if [ -f "$DESTMOUNT$RECOVERY_DIR/flags/version" ]; then
+	vers=`$INSTALLPATH/busybox cat $DESTMOUNT$RECOVERY_DIR/flags/version`
 fi
-if [ -f "$DESTMOUNT/etc/recovery/flags/recovery_mode" ]; then
-	recmode=`$INSTALLPATH/busybox cat $DESTMOUNT/etc/recovery/flags/recovery_mode`
+if [ -f "$DESTMOUNT$RECOVERY_DIR/flags/recovery_mode" ]; then
+	recmode=`$INSTALLPATH/busybox cat $DESTMOUNT$RECOVERY_DIR/flags/recovery_mode`
 fi
-if [ -f "$DESTMOUNT/etc/recovery/flags/alt_system_mode" ]; then
+if [ -f "$DESTMOUNT$RECOVERY_DIR/flags/alt_system_mode" ]; then
 	altbootmode=1
 fi
 echo "$vers:$recmode:$altbootmode"

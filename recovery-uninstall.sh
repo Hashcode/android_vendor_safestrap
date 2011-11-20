@@ -1,9 +1,10 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.93
+# Version: 1.06
 PATH=/system/bin:/system/xbin
-INSTALLPATH=$1
+RECOVERY_DIR=/etc/safestrap
 PRIMARYSYS=/dev/block/mmcblk1p21
+INSTALLPATH=$1
 LOGFILE=$INSTALLPATH/action-uninstall.log
 
 echo '' > $LOGFILE
@@ -30,19 +31,8 @@ if [ -f "$DESTMOUNT/bin/logwrapper.bin" ]; then
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 fi
-if [ -f "$DESTMOUNT/bin/loadpreinstalls.sh.bak" ]; then
-	$INSTALLPATH/busybox cp -f $DESTMOUNT/bin/loadpreinstalls.sh.bak $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
-	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
-	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/loadpreinstalls.sh >> $LOGFILE
-fi
-if [ -d "$DESTMOUNT/etc/safestrap" ]; then
-	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/safestrap >> $LOGFILE
-fi
-if [ -d "$DESTMOUNT/etc/recovery" ]; then
-	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/recovery >> $LOGFILE
-fi
-if [ -d "$DESTMOUNT/etc/rootfs" ]; then
-	$INSTALLPATH/busybox rm -r $DESTMOUNT/etc/rootfs >> $LOGFILE
+if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then
+	$INSTALLPATH/busybox rm -r $DESTMOUNT$RECOVERY_DIR >> $LOGFILE
 fi
 
 sync

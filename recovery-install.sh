@@ -1,10 +1,11 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 0.93
+# Version: 1.06
 PATH=/system/bin:/system/xbin
+RECOVERY_DIR=/etc/safestrap
+PRIMARYSYS=/dev/block/mmcblk1p21
 INSTALLPATH=$1
 LOGFILE=$INSTALLPATH/action-install.log
-PRIMARYSYS=/dev/block/mmcblk1p21
 
 echo "install path=$INSTALLPATH/install-files" > $LOGFILE
 if [ -d $INSTALLPATH/install-files ]; then
@@ -65,8 +66,8 @@ $INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 $INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 
 # delete any existing /system/etc/safestrap dir
-if [ -d "$DESTMOUNT/etc/safestrap" ]; then
-	$INSTALLPATH/busybox rm -rf $DESTMOUNT/etc/safestrap >> $LOGFILE
+if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then
+	$INSTALLPATH/busybox rm -rf $DESTMOUNT$RECOVERY_DIR >> $LOGFILE
 fi
 # delete any existing /system/etc/recovery dir
 if [ -d "$DESTMOUNT/etc/recovery" ]; then
@@ -77,16 +78,14 @@ if [ -d "$DESTMOUNT/etc/rootfs" ]; then
 	$INSTALLPATH/busybox rm -rf $DESTMOUNT/etc/rootfs >> $LOGFILE
 fi
 # extract the new dirs to /system
-$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/safestrap $DESTMOUNT/etc >> $LOGFILE
-$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/etc/safestrap/* >> $LOGFILE
-$INSTALLPATH/busybox chmod 755 $DESTMOUNT/etc/safestrap/* >> $LOGFILE
-$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/recovery $DESTMOUNT/etc >> $LOGFILE
-$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files/etc/rootfs $DESTMOUNT/etc >> $LOGFILE
+$INSTALLPATH/busybox cp -R $INSTALLPATH/install-files$RECOVERY_DIR $DESTMOUNT/etc >> $LOGFILE
+$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT$RECOVERY_DIR/* >> $LOGFILE
+$INSTALLPATH/busybox chmod 755 $DESTMOUNT$RECOVERY_DIR/* >> $LOGFILE
 
 # determine our active system, and umount/remount accordingly
 if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	# if we're in 2nd-system then re-enable safe boot
-	$INSTALLPATH/busybox touch $DESTMOUNT/etc/recovery/flags/alt_system_mode >> $LOGFILE
+	$INSTALLPATH/busybox touch $DESTMOUNT$RECOVERY_DIR/flags/alt_system_mode >> $LOGFILE
 
 	$INSTALLPATH/busybox umount $DESTMOUNT >> $LOGFILE
 	$INSTALLPATH/busybox rmdir $DESTMOUNT >> $LOGFILE

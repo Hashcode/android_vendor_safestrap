@@ -1,11 +1,11 @@
 #!/system/bin/sh
 # By: Hashcode
-# Version: 1.01
+# Version: 1.06
 PATH=/system/xbin:/system/bin
-REC_FILE=/system/etc/recovery/flags/recovery_mode
-ALT_SYSTEM_FILE=/system/etc/recovery/flags/alt_system_mode
+RECOVERY_DIR=/system/etc/safestrap
+REC_FILE=$RECOVERY_DIR/flags/recovery_mode
+ALT_SYSTEM_FILE=$RECOVERY_DIR/flags/alt_system_mode
 ALT_SYSTEM_MODE="0"
-RECOVERY_DIR=/system/etc/recovery
 BOOTMODE=$(getprop ro.bootmode)
 CHECK_BOOTMODE="bp-tools"
 
@@ -22,7 +22,7 @@ if [ "$2" = "userdata" ]; then
 		ALT_SYSTEM_MODE="1"
 	fi
 
-	if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $(/system/etc/safestrap/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
+	if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
 		# back out of init.rc as much as possible
 		mount -o remount,rw rootfs
 
@@ -224,9 +224,10 @@ if [ "$2" = "userdata" ]; then
 		/sbin/busybox umount -l /system
 		/sbin/hijack.killall
 
-		/sbin/taskset -p -c 0 1
+		#/sbin/taskset -p -c 0 1
 		/sbin/busybox sync
-		/sbin/taskset -c 0 /sbin/2nd-init
+		#/sbin/taskset -c 0 /sbin/2nd-init
+		/sbin/2nd-init
 		exit
 	fi
 	if [ -f "$ALT_SYSTEM_FILE" ] ; then
@@ -242,14 +243,14 @@ if [ "$2" = "userdata" ]; then
 		cd /
 		chmod 750 /sbin/*
 
+		# copy default rootfs files to /
+		/sbin/busybox cp $RECOVERY_DIR/rootfs/* /
+
 		# mount preinstall and move /preinstall/etc/rootfs/* to /
 		/sbin/busybox mount -t ext3 /dev/block/mmcblk1p23 /preinstall
-
-		/sbin/busybox cp /system/etc/rootfs/* /
-		# if there's no /preinstall/etc/rootfs/ folder, then copy it from /system
+		# if there's a /preinstall/etc/rootfs/ folder then copy it
 		if [ -d "/preinstall/etc/rootfs" ]; then
 			/sbin/busybox cp /preinstall/etc/rootfs/* /
-		else
 		fi
 		# check for hijacks, and remove
 		if [ -f "/preinstall/bin/logwrapper.orig" ]; then
@@ -275,16 +276,17 @@ if [ "$2" = "userdata" ]; then
 		/sbin/hijack.killall
 
 		# mount point / symlink cleanup
-		#/sbin/busybox rm -r /sdcard
-		#/sbin/busybox rm -r /sdcard-ext
+		/sbin/busybox rm /sdcard
+		/sbin/busybox rm /sdcard-ext
 		#/sbin/busybox rm -r /osh
 		#/sbin/busybox rm -r /mnt
 		#/sbin/busybox rm -r /vendor
 		#/sbin/busybox rm -r /d
 
-		/sbin/taskset -p -c 0 1
+		#/sbin/taskset -p -c 0 1
 		/sbin/busybox sync
-		/sbin/taskset -c 0 /sbin/2nd-init
+		#/sbin/taskset -c 0 /sbin/2nd-init
+                /sbin/2nd-init
 		exit
 	fi
 
