@@ -1,0 +1,49 @@
+on early-init
+    start ueventd
+
+on init
+    exec /sbin/fixboot.sh
+
+    export PATH /sbin
+    export ANDROID_ROOT /system
+    export ANDROID_DATA /data
+    export EXTERNAL_STORAGE /sdcard
+
+    symlink /system/etc /etc
+
+    mkdir /boot
+    mkdir /sdcard
+    mkdir /sd-ext
+    mkdir /datadata
+    mkdir /emmc
+    mkdir /systemorig
+    mkdir /system
+    mkdir /data
+    mkdir /pds
+    mkdir /cache
+    mkdir /tmp
+    mount /tmp /tmp tmpfs
+
+on boot
+    exec /usbcheck.sh
+
+    ifup lo
+    hostname localhost
+    domainname localdomain
+
+    class_start default
+
+service ueventd /sbin/ueventd
+    critical
+
+service recovery /sbin/recovery
+
+service adbd /sbin/adbd recovery
+    disabled
+
+on property:persist.service.adb.enable=1
+    start adbd
+
+on property:persist.service.adb.enable=0
+    stop adbd
+
