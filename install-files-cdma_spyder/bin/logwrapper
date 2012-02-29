@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By: Hashcode
-# Version: 1.07
+# Version: 1.09
 PATH=/system/xbin:/system/bin
 RECOVERY_DIR=/system/etc/safestrap
 REC_FILE=$RECOVERY_DIR/flags/recovery_mode
@@ -243,10 +243,10 @@ if [ "$2" = "userdata" ]; then
 		chmod 750 /sbin/*
 
 		# copy default rootfs files to /
-		/sbin/busybox cp $RECOVERY_DIR/rootfs/* /
+		/sbin/busybox cp -r $RECOVERY_DIR/rootfs/* /
 
 		# mount preinstall and move /preinstall/etc/rootfs/* to /
-		/sbin/busybox mount -t ext3 /dev/block/mmcblk1p23 /preinstall
+		/sbin/busybox mount -t ext3 /dev/block/preinstall /preinstall
 		# if there's a /preinstall/etc/rootfs/ folder then copy it
 		if [ -d "/preinstall/etc/rootfs" ]; then
 			/sbin/busybox cp -r /preinstall/etc/rootfs/* /
@@ -267,8 +267,10 @@ if [ "$2" = "userdata" ]; then
 
 		/sbin/busybox chmod 750 /sbin/*
 		/sbin/busybox chmod 755 /init
+		/sbin/busybox chmod 755 /charger
 		/sbin/busybox chmod 644 /default.prop
 		/sbin/busybox chmod 755 /*.rc
+		/sbin/busybox chmod 755 /*.sh
 		/sbin/busybox umount /preinstall
 
 		/sbin/busybox umount -l /system

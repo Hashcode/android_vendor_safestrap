@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 1.06
+# Version: 1.09
 PATH=/system/bin:/system/xbin
 RECOVERY_DIR=/etc/safestrap
 PRIMARYSYS=/dev/block/mmcblk1p21
