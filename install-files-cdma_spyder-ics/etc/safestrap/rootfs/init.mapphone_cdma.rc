@@ -16,10 +16,6 @@ on init
     mkdir /mnt/usbdisk_1.5 0755 system system
     mkdir /mnt/usbdisk_1.6 0755 system system
     mkdir /mnt/usbdisk_1.7 0755 system system
-# For Authentec VPN: route packets over bridge interface before processing
-    write /proc/sys/net/bridge/bridge-nf-call-arptables 0
-    write /proc/sys/net/bridge/bridge-nf-call-iptables 0
-    write /proc/sys/net/bridge/bridge-nf-call-ip6tables 0
 on fs
     mount ext3 /dev/block/system /system wait ro noatime nodiratime barrier=1
     exec /system/bin/logwrapper /system/bin/mount_ext3.sh pds /pds
@@ -63,8 +59,6 @@ on post-fs
     write /sys/block/mmcblk1/queue/read_ahead_kb 1024
     # Set enable_smp if BT LE is supported
     write /sys/module/bluetooth/parameters/enable_smp 1
-    # Disable SysRq keyboard trigger
-    write /proc/sys/kernel/sysrq 0
 # Change ownership for vibrators
     chown system system /sys/class/timed_output/lvibrator/enable
     chown system system /sys/class/timed_output/vibrator/enable
@@ -161,10 +155,9 @@ on post-fs
     chmod 0700 /data/logger/apanic_console
     #Create location directory
     mkdir /data/location 0771 radio radio
-    # Create anr directory and change permission to 775 to save trace.txt
+    # Create anr directory and change permission to 777 to save trace.txt
     mkdir /data/anr
-    chown system system /data/anr
-    chmod 0775 /data/anr
+    chmod 0777 /data/anr
 # create the necessary data dirs for tpapi with proper permission
     mkdir /data/tpapi
     mkdir /data/tpapi/etc
@@ -216,7 +209,7 @@ on boot
     setprop ro.sys.atvc_allow_netmon_ih 0
     setprop ro.sys.atvc_allow_res_core 0
     setprop ro.sys.atvc_allow_res_panic 0
-    setprop ro.sys.atvc_allow_all_adb 1
+    setprop ro.sys.atvc_allow_all_adb 0
     setprop ro.sys.atvc_allow_all_core 0
     setprop ro.sys.atvc_allow_efem 0
     setprop ro.sys.atvc_allow_bp_log 0
@@ -656,7 +649,7 @@ on property:tcmd.bt_mod=0
 on property:tcmd.start_tcmdhelp=1
     start tcmdhelp
 # Ecompass daemon
-service akmd8975 /system/bin/akmd8975
+service akmd2 /system/bin/akmd2
     class post_zygote_services
     user compass
     group compass misc input
@@ -685,8 +678,6 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dtiwlan0 -itiwlan0 -c/data/mi
     socket wpa_tiwlan0 dgram 660 wifi wifi
     disabled
     oneshot
-on property:init.svc.wpa_supplicant=running
-    write /proc/sys/net/ipv6/conf/tiwlan0/disable_ipv6 1
 service dhcpcd_tiwlan0 /system/bin/dhcpcd
     class post_zygote_services
     disabled
@@ -734,8 +725,6 @@ service pm_init /system/bin/sh /system/usr/bin/pm_init.sh
     oneshot
 service modemlog /system/bin/modemlog
    class pre_zygote_services
-   user system
-   group system log
    oneshot
 service fmradio /system/bin/fmradioserver
     class post_zygote_services
@@ -826,8 +815,6 @@ service gadget-lte-modem /system/bin/tty2ttyd ril.wrigley.modem.tty /dev/ttyGS1 
     group radio
     disabled
 service wrigley-diag /system/bin/wrigley-diag.sh
-    user log
-    group net_admin
     oneshot
     disabled
 service logcatd-blan /system/bin/logcatd-blan
@@ -847,7 +834,6 @@ service gadget-qbp-diag /system/bin/tty2ttyd persist.ril.diag.ttydevice /dev/tty
 on property:ro.bootmode=bp-tools
     start tcmd
     start gadget-qbp-diag
-    write /proc/sys/net/ipv4/ip_forward 1
     start wrigley-diag
     start logcatd-blan
 #OSH Startup
@@ -865,11 +851,6 @@ on property:sys.SystemMode=RM_SM_DOCKED
 service mdm_usb_suspend /system/bin/enable_mdm_usb_suspend.sh
     class pre_zygote_services
     group radio
-    oneshot
-service JuniperVPNTools /system/bin/JuniperVPNTools
-    class pre_zygote_services
-    user vpn
-    group vpn net_admin net_raw
     oneshot
 service thermal_manager /system/bin/thermaldaemon
     class pre_zygote_services

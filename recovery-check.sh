@@ -3,7 +3,7 @@
 # Version: 1.09
 PATH=/system/bin:/system/xbin
 RECOVERY_DIR=/etc/safestrap
-PRIMARYSYS=/dev/block/mmcblk1p21
+PRIMARYSYS=/dev/block/mmcblk1p20
 INSTALLPATH=$1
 vers=0
 recmode=

@@ -1,0 +1,298 @@
+#!/system/bin/sh
+# By: Hashcode
+# Version: 1.09
+PATH=/system/xbin:/system/bin
+RECOVERY_DIR=/system/etc/safestrap
+REC_FILE=$RECOVERY_DIR/flags/recovery_mode
+ALT_SYSTEM_FILE=$RECOVERY_DIR/flags/alt_system_mode
+ALT_SYSTEM_MODE="0"
+BOOTMODE=$(getprop ro.bootmode)
+CHECK_BOOTMODE="bp-tools"
+
+if [ "$2" = "userdata" ]; then
+
+	# boot modes= ap-bp-bypass, bp-tools
+	# check the boot mode from the recovery file
+	if [ -f "$REC_FILE" ]; then
+		CHECK_BOOTMODE=`cat $REC_FILE`
+	fi
+
+	# check for 
+	if [ -f "$ALT_SYSTEM_FILE" ] ; then
+		ALT_SYSTEM_MODE="1"
+	fi
+
+	if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
+		# back out of init.rc as much as possible
+		mount -o remount,rw rootfs
+
+		mv /sbin/adbd /sbin/adbd.old
+		rm /etc
+		mkdir /etc
+		chmod 755 /etc
+		rm /sdcard
+		rm /sdcard-ext
+		rm -r /mnt
+		rm /vendor
+		rm /d
+
+		# move apps into /tmp for execution later
+		busybox unzip -o $RECOVERY_DIR/recovery.zip -d /
+		chmod 755 /etc/*
+		chmod 755 /res/*
+		chmod 755 /res/images/*
+		chmod 644 /default.prop
+		chmod 755 /*.rc
+		cd /sbin
+		ln -s recovery busybox
+		ln -s recovery dump_image
+		ln -s recovery edify
+		ln -s recovery erase_image
+		ln -s recovery flash_image
+		ln -s recovery mkyaffs2image
+		ln -s recovery nandroid
+		ln -s recovery reboot
+		ln -s recovery unyaffs
+		ln -s recovery volume
+		ln -s busybox [
+		ln -s busybox [[
+		ln -s busybox ash
+		ln -s busybox awk
+		ln -s busybox basename
+		ln -s busybox bbconfig
+		ln -s busybox bunzip2
+		ln -s busybox bzcat
+		ln -s busybox bzip2
+		ln -s busybox cal
+		ln -s busybox cat
+		ln -s busybox catv
+		ln -s busybox chattr
+		ln -s busybox chgrp
+		ln -s busybox chmod
+		ln -s busybox chown
+		ln -s busybox chroot
+		ln -s busybox cksum
+		ln -s busybox clear
+		ln -s busybox cmp
+		ln -s busybox cp
+		ln -s busybox cpio
+		ln -s busybox cut
+		ln -s busybox date
+		ln -s busybox dc
+		ln -s busybox dd
+		ln -s busybox depmod
+		ln -s busybox devmem
+		ln -s busybox df
+		ln -s busybox diff
+		ln -s busybox dirname
+		ln -s busybox dmesg
+		ln -s busybox dos2unix
+		ln -s busybox du
+		ln -s busybox echo
+		ln -s busybox egrep
+		ln -s busybox env
+		ln -s busybox expand
+		ln -s busybox expr
+		ln -s busybox false
+		ln -s busybox fdisk
+		ln -s busybox fgrep
+		ln -s busybox find
+		ln -s busybox fold
+		ln -s busybox free
+		ln -s busybox freeramdisk
+		ln -s busybox fuser
+		ln -s busybox getopt
+		ln -s busybox grep
+		ln -s busybox groups
+		ln -s busybox gunzip
+		ln -s busybox gzip
+		ln -s busybox head
+		ln -s busybox hexdump
+		ln -s busybox id
+		ln -s busybox insmod
+		ln -s busybox install
+		ln -s busybox kill
+		ln -s busybox killall
+		ln -s busybox killall5
+		ln -s busybox length
+		ln -s busybox less
+		ln -s busybox ln
+		ln -s busybox losetup
+		ln -s busybox ls
+		ln -s busybox lsattr
+		ln -s busybox lsmod
+		ln -s busybox lspci
+		ln -s busybox lsusb
+		ln -s busybox lzcat
+		ln -s busybox lzop
+		ln -s busybox lzopcat
+		ln -s busybox makedevs
+		ln -s busybox md5sum
+		ln -s busybox mkdir
+		ln -s busybox mkfifo
+		ln -s busybox mkfs.ext2
+		ln -s busybox mknod
+		ln -s busybox mkswap
+		ln -s busybox mktemp
+		ln -s busybox modinfo
+		ln -s busybox modprobe
+		ln -s busybox more
+		ln -s busybox mount
+		ln -s busybox mountpoint
+		ln -s busybox mv
+		ln -s busybox nanddump
+		ln -s busybox nandwrite
+		ln -s busybox nice
+		ln -s busybox nohup
+		ln -s busybox od
+		ln -s busybox patch
+		ln -s busybox pgrep
+		ln -s busybox pidof
+		ln -s busybox pkill
+		ln -s busybox printenv
+		ln -s busybox printf
+		ln -s busybox ps
+		ln -s busybox pstree
+		ln -s busybox pwd
+		ln -s busybox rdev
+		ln -s busybox readlink
+		ln -s busybox realpath
+		ln -s busybox renice
+		ln -s busybox reset
+		ln -s busybox resize
+		ln -s busybox rev
+		ln -s busybox rm
+		ln -s busybox rmdir
+		ln -s busybox rmmod
+		ln -s busybox run-parts
+		ln -s busybox sed
+		ln -s busybox seq
+		ln -s busybox setconsole
+		ln -s busybox setserial
+		ln -s busybox setsid
+		ln -s busybox sh
+		ln -s busybox sha1sum
+		ln -s busybox sha256sum
+		ln -s busybox sha512sum
+		ln -s busybox sleep
+		ln -s busybox sort
+		ln -s busybox split
+		ln -s busybox stat
+		ln -s busybox strings
+		ln -s busybox stty
+		ln -s busybox swapoff
+		ln -s busybox swapon
+		ln -s busybox sync
+		ln -s busybox sysctl
+		ln -s busybox tac
+		ln -s busybox tail
+		ln -s busybox tar
+		ln -s busybox tee
+		ln -s busybox test
+		ln -s busybox time
+		ln -s busybox top
+		ln -s busybox touch
+		ln -s busybox tr
+		ln -s busybox true
+		ln -s busybox tty
+		ln -s busybox umount
+		ln -s busybox uname
+		ln -s busybox unexpand
+		ln -s busybox uniq
+		ln -s busybox unix2dos
+		ln -s busybox unlzma
+		ln -s busybox unlzop
+		ln -s busybox unxz
+		ln -s busybox unzip
+		ln -s busybox uptime
+		ln -s busybox usleep
+		ln -s busybox uudecode
+		ln -s busybox uuencode
+		ln -s busybox watch
+		ln -s busybox wc
+		ln -s busybox which
+		ln -s busybox whoami
+		ln -s busybox xargs
+		ln -s busybox xzcat
+		ln -s busybox yes
+		ln -s busybox zcat
+		cd /
+
+		busybox unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+		chmod 750 /sbin/*
+
+		/sbin/busybox umount -l /system
+		/sbin/hijack.killall
+
+		/sbin/taskset -p -c 0 1
+		/sbin/busybox sync
+		/sbin/taskset -c 0 /sbin/2nd-init
+		exit
+	fi
+	if [ -f "$ALT_SYSTEM_FILE" ] ; then
+
+		# back out of init.rc as much as possible
+		mount -o remount,rw rootfs
+
+		mv /sbin/adbd /sbin/adbd.old
+
+		busybox unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+		cd /sbin
+		ln -s recovery busybox
+		cd /
+		chmod 750 /sbin/*
+
+		# copy default rootfs files to /
+		/sbin/busybox cp -r $RECOVERY_DIR/rootfs/* /
+
+		# mount preinstall and move /preinstall/etc/rootfs/* to /
+		/sbin/busybox mount -t ext3 /dev/block/preinstall /preinstall
+		# if there's a /preinstall/etc/rootfs/ folder then copy it
+		if [ -d "/preinstall/etc/rootfs" ]; then
+			/sbin/busybox cp -r /preinstall/etc/rootfs/* /
+		fi
+		# check for hijacks, and remove
+		if [ -f "/preinstall/bin/logwrapper.orig" ]; then
+			/sbin/busybox rm /preinstall/bin/logwrapper
+			/sbin/busybox mv /preinstall/bin/logwrapper.orig /preinstall/bin/logwrapper
+			/sbin/busybox chmod 755 /preinstall/bin/logwrapper
+			/sbin/busybox chown root.shell /preinstall/bin/logwrapper
+		fi
+		if [ -f "/preinstall/bin/logwrapper.bin" ]; then
+			/sbin/busybox rm /preinstall/bin/logwrapper
+			/sbin/busybox mv /preinstall/bin/logwrapper.bin /preinstall/bin/logwrapper
+			/sbin/busybox chmod 755 /preinstall/bin/logwrapper
+			/sbin/busybox chown root.shell /preinstall/bin/logwrapper
+		fi
+
+		/sbin/busybox chmod 750 /sbin/*
+		/sbin/busybox chmod 755 /init
+		/sbin/busybox chmod 755 /charger
+		/sbin/busybox chmod 644 /default.prop
+		/sbin/busybox chmod 755 /*.rc
+		/sbin/busybox chmod 755 /*.sh
+		/sbin/busybox umount /preinstall
+
+		/sbin/busybox umount -l /system
+
+		/sbin/hijack.killall
+
+		# mount point / symlink cleanup
+		/sbin/busybox rm /sdcard
+		/sbin/busybox rm /sdcard-ext
+		#/sbin/busybox rm -r /osh
+		#/sbin/busybox rm -r /mnt
+		#/sbin/busybox rm -r /vendor
+		#/sbin/busybox rm -r /d
+
+		/sbin/taskset -p -c 0 1
+		/sbin/busybox sync
+		/sbin/taskset -c 0 /sbin/2nd-init
+		exit
+	fi
+
+fi
+
+
+/system/bin/logwrapper.bin "$@"
+
