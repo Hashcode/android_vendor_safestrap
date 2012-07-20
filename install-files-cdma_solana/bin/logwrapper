@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By: Hashcode
-# Version: 1.07
+# Version: 2.00
 PATH=/system/xbin:/system/bin
 RECOVERY_DIR=/system/etc/safestrap
 REC_FILE=$RECOVERY_DIR/flags/recovery_mode
@@ -271,24 +271,39 @@ if [ "$2" = "userdata" ]; then
 		/sbin/busybox chmod 644 /default.prop
 		/sbin/busybox chmod 755 /*.rc
 		/sbin/busybox chmod 755 /*.sh
-		/sbin/busybox umount /preinstall
 
-		/sbin/busybox umount -l /system
+		# check for kexec files
+		if [ -d "/preinstall/etc/kexec" ]; then
+			cd /preinstall/etc/kexec
+			chmod 755 kexec
+			insmod uart.ko
+			insmod atags.ko
+			cat atags3 > /proc/atags
+			insmod arm_kexec.ko
+			insmod kexec.ko
+			./kexec -l zImage --devtree=devtree7 --ramdisk=ramdisk.gz
+			sleep 1 
+			./kexec -e
+		else
+			/sbin/busybox umount /preinstall
 
-		/sbin/hijack.killall
+			/sbin/busybox umount -l /system
 
-		# mount point / symlink cleanup
-		/sbin/busybox rm /sdcard
-		/sbin/busybox rm /sdcard-ext
-		#/sbin/busybox rm -r /osh
-		#/sbin/busybox rm -r /mnt
-		#/sbin/busybox rm -r /vendor
-		#/sbin/busybox rm -r /d
+			/sbin/hijack.killall
 
-		/sbin/taskset -p -c 0 1
-		/sbin/busybox sync
-		/sbin/taskset -c 0 /sbin/2nd-init
-		exit
+			# mount point / symlink cleanup
+			/sbin/busybox rm /sdcard
+			/sbin/busybox rm /sdcard-ext
+			#/sbin/busybox rm -r /osh
+			#/sbin/busybox rm -r /mnt
+			#/sbin/busybox rm -r /vendor
+			#/sbin/busybox rm -r /d
+
+			/sbin/taskset -p -c 0 1
+			/sbin/busybox sync
+			/sbin/taskset -c 0 /sbin/2nd-init
+			exit
+                fi
 	fi
 
 fi
