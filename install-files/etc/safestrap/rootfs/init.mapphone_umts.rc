@@ -53,7 +53,7 @@ on init
     chown system radio /sys/bus/usb/devices/usb1/power/control
     chown system radio /sys/bus/usb/devices/usb2/power/control
 on fs
-    mount ext3 /dev/block/system /system wait ro noatime nodiratime barrier=1
+    mount ext3 /dev/block/mmcblk1p22 /system wait ro noatime nodiratime barrier=1
     exec /system/bin/logwrapper /system/bin/mount_ext3.sh pds /pds
 #    exec /system/bin/logwrapper /system/bin/mount_ext3.sh preinstall /preinstall
     exec /system/bin/logwrapper /system/bin/mount_ext3.sh userdata /data
@@ -150,9 +150,6 @@ on post-fs
     insmod /system/lib/modules/cfg80211.ko
     insmod /system/lib/modules/mac80211.ko
     insmod /system/lib/modules/wl12xx.ko
-    write /sys/block/zram0/disksize 178257920
-    exec /system/bin/motobox mkswap /dev/block/zram0
-    exec /system/bin/motobox swapon /dev/block/zram0
 on post-fs-data
     copy /proc/apanic_app_threads /data/dontpanic/apanic_app_threads
     chown root log /data/dontpanic/apanic_app_threads
@@ -249,7 +246,7 @@ on boot
     setprop ro.sys.atvc_allow_netmon_ih 0
     setprop ro.sys.atvc_allow_res_core 0
     setprop ro.sys.atvc_allow_res_panic 0
-    setprop ro.sys.atvc_allow_all_adb 1
+    setprop ro.sys.atvc_allow_all_adb 0
     setprop ro.sys.atvc_allow_all_core 0
     setprop ro.sys.atvc_allow_efem 0
     setprop ro.sys.atvc_allow_bp_log 0
@@ -820,7 +817,7 @@ service dhcpcd_wlan0 /system/bin/dhcpcd
     class main
     disabled
     oneshot
-service iprenew_wlan0 /system/bin/dhcpcd -n
+service iprenew_wlan0 /system/bin/dhcpcd -nBK
     class main
     disabled
     oneshot
@@ -828,7 +825,7 @@ service dhcpcd_p2p /system/bin/dhcpcd -aABKL
     class main
     disabled
     oneshot
-service iprenew_p2p /system/bin/dhcpcd -n
+service iprenew_p2p /system/bin/dhcpcd -nBK
     class main
     disabled
     oneshot
