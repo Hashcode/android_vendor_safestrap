@@ -1,20 +1,27 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 1.09
+# Version: 3.00
 PATH=/system/bin:/system/xbin
-RECOVERY_DIR=/etc/safestrap
-PRIMARYSYS=/dev/block/mmcblk1p21
+
 INSTALLPATH=$1
+RECOVERY_DIR=/etc/safestrap
 LOGFILE=$INSTALLPATH/action-uninstall.log
+
+chmod 755 $INSTALLPATH/busybox
+
+if [ -f /dev/block/systemorig ]; then
+	PRIMARYSYS=`$INSTALLPATH/busybox ls -l /dev/block/ | $INSTALLPATH/busybox grep systemorig | $INSTALLPATH/busybox tail -c 22`
+else
+	PRIMARYSYS=`$INSTALLPATH/busybox ls -l /dev/block/ | $INSTALLPATH/busybox grep system | $INSTALLPATH/busybox tail -c 22`
+fi
+CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
 
 echo '' > $LOGFILE
 
-chmod 755 $INSTALLPATH/busybox
-CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
 # determine our active system, and mount/remount accordingly
 if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	# alt-system, needs to mount original /system
-	DESTMOUNT=/data/local/tmp/system
+	DESTMOUNT=$INSTALLPATH/system
 	if [ ! -d "$DESTMOUNT" ]; then
 		$INSTALLPATH/busybox mkdir $DESTMOUNT
 		$INSTALLPATH/busybox chmod 755 $DESTMOUNT
@@ -31,6 +38,7 @@ if [ -f "$DESTMOUNT/bin/logwrapper.bin" ]; then
 	$INSTALLPATH/busybox chown 0.2000 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 	$INSTALLPATH/busybox chmod 755 $DESTMOUNT/bin/logwrapper >> $LOGFILE
 fi
+
 if [ -d "$DESTMOUNT$RECOVERY_DIR" ]; then
 	$INSTALLPATH/busybox rm -r $DESTMOUNT$RECOVERY_DIR >> $LOGFILE
 fi

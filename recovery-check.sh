@@ -1,17 +1,24 @@
 #!/system/bin/sh
 # By Hashcode
-# Version: 1.09
+# Version: 3.00
 PATH=/system/bin:/system/xbin
-RECOVERY_DIR=/etc/safestrap
-PRIMARYSYS=/dev/block/mmcblk1p20
-INSTALLPATH=$1
-vers=0
-recmode=
-altbootmode=0
 
+vers=0
+alt_boot_mode=0
+
+INSTALLPATH=$1
+RECOVERY_DIR=/etc/safestrap
+
+if [ -f /dev/block/systemorig ]; then
+	PRIMARYSYS=`$INSTALLPATH/busybox ls -l /dev/block/ | $INSTALLPATH/busybox grep systemorig | $INSTALLPATH/busybox tail -c 22`
+else
+	PRIMARYSYS=`$INSTALLPATH/busybox ls -l /dev/block/ | $INSTALLPATH/busybox grep system | $INSTALLPATH/busybox tail -c 22`
+fi
 CURRENTSYS=`$INSTALLPATH/busybox ls -l /dev/block/system | $INSTALLPATH/busybox tail -c 22`
+
 if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	# alt-system, needs to mount original /system
+	alt_boot_mode=1
 	DESTMOUNT=$INSTALLPATH/system
 	if [ ! -d "$DESTMOUNT" ]; then
 		$INSTALLPATH/busybox mkdir $DESTMOUNT
@@ -24,15 +31,9 @@ fi
 if [ -f "$DESTMOUNT$RECOVERY_DIR/flags/version" ]; then
 	vers=`$INSTALLPATH/busybox cat $DESTMOUNT$RECOVERY_DIR/flags/version`
 fi
-if [ -f "$DESTMOUNT$RECOVERY_DIR/flags/recovery_mode" ]; then
-	recmode=`$INSTALLPATH/busybox cat $DESTMOUNT$RECOVERY_DIR/flags/recovery_mode`
-fi
-if [ -f "$DESTMOUNT$RECOVERY_DIR/flags/alt_system_mode" ]; then
-	altbootmode=1
-fi
-echo "$vers:$recmode:$altbootmode"
 
 if [ ! "$CURRENTSYS" = "$PRIMARYSYS" ]; then
 	$INSTALLPATH/busybox umount $DESTMOUNT
 fi
+echo "$vers:$alt_boot_mode"
 
