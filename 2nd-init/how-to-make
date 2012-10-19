@@ -1,1 +1,0 @@
-arm-linux-gnueabi-gcc -static -o 2nd-init 2nd-init.c
