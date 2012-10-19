@@ -1,0 +1,231 @@
+#!/system/bin/sh
+# By: Hashcode
+# Version: 3.02
+PATH=/system/xbin:/system/bin:/sbin
+
+# SS3 Setup
+SYS2_MNT=/s2
+SS_MNT=/ss
+SS_PART=emstorage
+
+RECOVERY_DIR=/system/etc/safestrap
+SS_DIR=$SS_MNT/safestrap
+ALT_SYSTEM_MODE="0"
+BOOTMODE=$(getprop ro.bootmode)
+CHARGER_MODE=$(cat /sys/class/power_supply/ac/online)
+CHECK_BOOTMODE="bp-tools"
+
+# Function for search/replace partition names with symlink generics
+fixReference()
+{
+	FIXBLK=$(/sbin/bbx cat /proc/partitions | /sbin/bbx grep ${2} | /sbin/bbx cut -c26-35 | /sbin/bbx sed s/\t*//)
+	if [ "$FIXBLK" != "" ]; then
+		/sbin/bbx sed s/$FIXBLK/${3}/ < ${1} > ${1}.bak
+		RESULT=`echo $?`
+		if [ $RESULT -eq 0 ]; then
+			if [ -f ${1}.bak ]; then
+				/sbin/bbx mv ${1}.bak ${1}
+			fi
+		else
+			/sbin/rm ${1}.bak
+		fi
+	fi
+}
+
+
+if [ "$2" = "userdata" ]; then
+	# remount root as rw
+	mount -o remount,rw rootfs
+
+	# need busybox
+	cp $RECOVERY_DIR/bbx /sbin/bbx
+	chmod 755 /sbin/bbx
+	chown 0.2000 /sbin/bbx
+
+	POWERUP_REASON=$(/sbin/bbx cat /proc/bootinfo | /sbin/bbx grep POWERUPREASON | /sbin/bbx cut -c 19-)
+
+	if [ "$CHARGER_MODE" != "1" ] || [ "$POWERUP_REASON" != "00000100" ]; then
+		# create safestrap mount point
+		/sbin/bbx mkdir $SS_MNT
+		/sbin/bbx chown 0.2000 $SS_MNT
+		/sbin/bbx chmod 777 $SS_MNT
+		/sbin/bbx mkdir $SYS2_MNT
+		/sbin/bbx chown 0.2000 $SYS2_MNT
+		/sbin/bbx chmod 777 $SYS2_MNT
+
+		# mount safestrap partition
+		/sbin/bbx mount -t vfat /dev/block/$SS_PART $SS_MNT
+
+		if [ ! -d "$SS_DIR" ]; then
+			/sbin/bbx mkdir -p $SS_DIR
+		fi
+		if [ ! -f "$SS_DIR/active_slot" ]; then
+			/sbin/bbx echo "stock" > $SS_DIR/active_slot
+		fi
+		SLOT_LOC=$(/sbin/bbx cat $SS_DIR/active_slot)
+
+		# check the boot mode from the recovery file
+		if [ -f $SS_DIR/recovery_mode ]; then
+			CHECK_BOOTMODE=$(/sbin/bbx cat SAFESTRAP_DIR/recovery_mode)
+		fi
+		# boot modes= ap-bp-bypass, bp-tools
+		if [ "$BOOTMODE" = "$CHECK_BOOTMODE" ]; then
+			ALT_SYSTEM_MODE="2"
+		else
+			if [ -f "$SS_DIR/$SLOT_LOC/system.img" ] && [ -f "$SS_DIR/$SLOT_LOC/userdata.img" ] && [ -f "$SS_DIR/$SLOT_LOC/cache.img" ]; then
+				ALT_SYSTEM_MODE="1"
+			fi
+		fi
+
+		# check for .recovery_mode on current /data mount
+		if [ "$ALT_SYSTEM_MODE" = "1" ]; then
+			# setup loopback
+			/sbin/bbx losetup /dev/block/loop6 $SS_DIR/$SLOT_LOC/userdata.img
+			/sbin/bbx mount -t ext3 /dev/block/loop6 /data
+			if [ -f /data/.recovery_mode ]; then
+				/sbin/bbx rm /data/.recovery_mode
+				ALT_SYSTEM_MODE="2"
+			fi
+			/sbin/bbx umount /data
+			/sbin/bbx losetup -d /dev/block/loop6
+		else
+			/sbin/bbx mount -t ext3 /dev/block/userdata /data
+			if [ -f /data/.recovery_mode ]; then
+				/sbin/bbx rm /data/.recovery_mode
+				ALT_SYSTEM_MODE="2"
+			fi
+			/sbin/bbx umount /data
+		fi
+
+		if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $($RECOVERY_DIR/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
+			# setup translate table
+			/sbin/bbx cat /proc/partitions | /sbin/bbx grep system | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' > $SS_DIR/translate
+			/sbin/bbx cat /proc/partitions | /sbin/bbx grep userdata | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' >> $SS_DIR/translate
+			/sbin/bbx cat /proc/partitions | /sbin/bbx grep cache | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' >> $SS_DIR/translate
+			/sbin/bbx cat /proc/partitions | /sbin/bbx grep pds | /sbin/bbx cut -c26- | /sbin/bbx sed 's/\t/=/g' >> $SS_DIR/translate
+			/sbin/bbx cat /proc/partitions | /sbin/bbx grep preinstall | /sbin/bbx cut -c26-36 | /sbin/bbx sed 's/\t/=system/g' >> $SS_DIR/translate
+
+			/sbin/bbx cp $RECOVERY_DIR/kexec/* /
+
+			cd /
+			/sbin/bbx chmod 755 /kexec
+			/sbin/bbx chown 0.2000 /kexec
+
+			# unmount partitions
+			/sbin/bbx umount /system
+			/sbin/bbx umount $SS_MNT
+
+			/sbin/hijack.killall
+
+			/sbin/bbx insmod /uart.ko
+			/sbin/bbx insmod /arm_kexec.ko
+			/sbin/bbx insmod /kexec.ko
+			/kexec -l /kernel --devtree=/devtree --ramdisk=/ramdisk-recovery.img
+			/sbin/bbx sleep 1
+			/kexec -e
+			exit
+		fi
+
+		# check for active virtual system
+		if [ "$ALT_SYSTEM_MODE" = "1" ]; then
+			/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+			/sbin/bbx chmod 750 /sbin/*
+
+			# setup loopback
+			/sbin/bbx losetup /dev/block/loop7 $SS_DIR/$SLOT_LOC/system.img
+			/sbin/bbx mount -t ext3 /dev/block/loop7 $SYS2_MNT
+
+			# check for hijacks, and remove
+			if [ -f "$SYS2_MNT/bin/logwrapper.orig" ]; then
+				/sbin/bbx rm $SYS2_MNT/bin/logwrapper
+				/sbin/bbx mv $SYS2_MNT/bin/logwrapper.orig $SYS2_MNT/bin/logwrapper
+				/sbin/bbx chmod 755 $SYS2_MNT/bin/logwrapper
+				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/logwrapper
+			fi
+			if [ -f "$SYS2_MNT/bin/logwrapper.bin" ]; then
+				/sbin/bbx rm $SYS2_MNT/bin/logwrapper
+				/sbin/bbx mv $SYS2_MNT/bin/logwrapper.bin $SYS2_MNT/bin/logwrapper
+				/sbin/bbx chmod 755 $SYS2_MNT/bin/logwrapper
+				/sbin/bbx chown 0.2000 $SYS2_MNT/bin/logwrapper
+			fi
+
+			# check for kexec files
+			if [ -d "$SYS2_MNT/etc/kexec" ]; then
+				/sbin/bbx cp $SYS2_MNT/etc/kexec/* /
+
+				# unmount new /system
+				/sbin/bbx umount $SYS2_MNT
+				/sbin/bbx losetup -d /dev/block/loop7
+				/sbin/bbx umount $SS_MNT
+
+				/sbin/hijack.killall
+
+				/sbin/bbx cd /
+				/sbin/bbx chmod 755 /kexec
+				/sbin/bbx chown 0.2000 /kexec
+				/sbin/bbx insmod /uart.ko
+				/sbin/bbx insmod /arm_kexec.ko
+				/sbin/bbx insmod /kexec.ko
+				/kexec -l /kernel --devtree=/devtree --ramdisk=/ramdisk.img
+				/sbin/bbx sleep 1
+				/kexec -e
+				exit
+			fi
+
+			# if there's a ramdisk then extract it
+			if [ -d "$SYS2_MNT/etc/rootfs" ]; then
+				if [ -f "$SYS2_MNT/etc/rootfs/sbin/adbd" ]; then
+					/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+				fi
+				if [ -f "$SYS2_MNT/etc/rootfs/init" ]; then
+					/sbin/bbx mv /init /init.old
+				fi
+				/sbin/bbx cp -R $SYS2_MNT/etc/rootfs/* /
+			fi
+
+			# fix "old" style mounts
+			for f in /init.*.rc
+			do
+				fixReference "$f" system system
+				fixReference "$f" userdata userdata
+				fixReference "$f" cache cache
+				fixReference "$f" pds pds
+				# include translations for older SS2 style ROMs (preinstall / webtop used as system)
+				fixReference "$f" preinstall system
+			done
+
+			# reset permissions
+			/sbin/bbx chmod -R 750 /sbin/*
+			/sbin/bbx chmod 755 /init
+			/sbin/bbx chmod 755 /charger
+			/sbin/bbx chmod 644 /default.prop
+			/sbin/bbx chmod 755 /*.rc
+			/sbin/bbx chmod 755 /*.sh
+
+			# unmount new /system
+			/sbin/bbx umount $SYS2_MNT
+			/sbin/bbx losetup -d /dev/block/loop7
+			/sbin/bbx umount $SS_MNT
+
+			# unmount old /system
+			/sbin/bbx umount -l /system
+
+			/sbin/hijack.killall
+
+			# mount point / symlink cleanup
+			/sbin/bbx rm /sdcard
+			/sbin/bbx rm /sdcard-ext
+
+			/sbin/taskset -p -c 0 1
+			/sbin/bbx sync
+			/sbin/taskset -c 0 /sbin/2nd-init
+			exit
+		fi
+
+		# unmount safestrap partition
+		/sbin/bbx umount $SS_MNT
+	fi
+fi
+
+/system/bin/logwrapper.bin "$@"
+
