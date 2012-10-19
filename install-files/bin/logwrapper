@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # By: Hashcode
-# Version: 2.20
+# Version: 2.10
 PATH=/system/xbin:/system/bin
 RECOVERY_DIR=/system/etc/safestrap
 REC_FILE=$RECOVERY_DIR/flags/recovery_mode
@@ -10,8 +10,7 @@ BOOTMODE=$(getprop ro.bootmode)
 POWERUP_REASON=$(cat /proc/bootinfo | grep POWERUPREASON | cut -c 19-)
 CHARGER_MODE=$(cat /sys/class/power_supply/ac/online)
 CHECK_BOOTMODE="bp-tools"
-ALT_SYSTEM_BLOCK=webtop
-ALT_SYSTEM_PART=osh
+ALT_SYSTEM_PART=preinstall
 
 if [ "$2" = "userdata" ]; then
 
@@ -250,30 +249,24 @@ if [ "$2" = "userdata" ]; then
 		# copy default rootfs files to /
 		/sbin/busybox cp -r $RECOVERY_DIR/rootfs/* /
 
-		# create the mount (just in case)
-		if [ ! -d "/$ALT_SYSTEM_PART" ]; then
-			/sbin/busybox mkdir /$ALT_SYSTEM_PART
-		fi
-
-		# mount $ALT_SYSTEM_BLOCK as $ALT_SYSTEM_PART and move /$ALT_SYSTEM_PART/etc/rootfs/* to /
-		/sbin/busybox mount -t ext3 /dev/block/$ALT_SYSTEM_BLOCK /$ALT_SYSTEM_PART
-
-		# if there's a /$ALT_SYSTEM_PART/etc/rootfs/ folder then copy it
-		if [ -d "/$ALT_SYSTEM_PART/etc/rootfs" ]; then
-			/sbin/busybox cp -r /$ALT_SYSTEM_PART/etc/rootfs/* /
+		# mount preinstall and move /preinstall/etc/rootfs/* to /
+		/sbin/busybox mount -t ext3 /dev/block/preinstall /preinstall
+		# if there's a /preinstall/etc/rootfs/ folder then copy it
+		if [ -d "/preinstall/etc/rootfs" ]; then
+			/sbin/busybox cp -r /preinstall/etc/rootfs/* /
 		fi
 		# check for hijacks, and remove
-		if [ -f "/$ALT_SYSTEM_PART/bin/logwrapper.orig" ]; then
-			/sbin/busybox rm /$ALT_SYSTEM_PART/bin/logwrapper
-			/sbin/busybox mv /$ALT_SYSTEM_PART/bin/logwrapper.orig /$ALT_SYSTEM_PART/bin/logwrapper
-			/sbin/busybox chmod 755 /$ALT_SYSTEM_PART/bin/logwrapper
-			/sbin/busybox chown root.shell /$ALT_SYSTEM_PART/bin/logwrapper
+		if [ -f "/preinstall/bin/logwrapper.orig" ]; then
+			/sbin/busybox rm /preinstall/bin/logwrapper
+			/sbin/busybox mv /preinstall/bin/logwrapper.orig /preinstall/bin/logwrapper
+			/sbin/busybox chmod 755 /preinstall/bin/logwrapper
+			/sbin/busybox chown root.shell /preinstall/bin/logwrapper
 		fi
-		if [ -f "/$ALT_SYSTEM_PART/bin/logwrapper.bin" ]; then
-			/sbin/busybox rm /$ALT_SYSTEM_PART/bin/logwrapper
-			/sbin/busybox mv /$ALT_SYSTEM_PART/bin/logwrapper.bin /$ALT_SYSTEM_PART/bin/logwrapper
-			/sbin/busybox chmod 755 /$ALT_SYSTEM_PART/bin/logwrapper
-			/sbin/busybox chown root.shell /$ALT_SYSTEM_PART/bin/logwrapper
+		if [ -f "/preinstall/bin/logwrapper.bin" ]; then
+			/sbin/busybox rm /preinstall/bin/logwrapper
+			/sbin/busybox mv /preinstall/bin/logwrapper.bin /preinstall/bin/logwrapper
+			/sbin/busybox chmod 755 /preinstall/bin/logwrapper
+			/sbin/busybox chown root.shell /preinstall/bin/logwrapper
 		fi
 
 		/sbin/busybox chmod 750 /sbin/*
@@ -284,18 +277,19 @@ if [ "$2" = "userdata" ]; then
 		/sbin/busybox chmod 755 /*.sh
 
 		# check for kexec files
-		if [ -d "/$ALT_SYSTEM_PART/etc/kexec" ]; then
-			cd /$ALT_SYSTEM_PART/etc/kexec
+		if [ -d "/preinstall/etc/kexec" ]; then
+			cd /preinstall/etc/kexec
 			chmod 755 kexec
 			insmod uart.ko
-			cp atags /atags
+			insmod atags.ko
+			cat atags3 > /proc/atags
 			insmod arm_kexec.ko
 			insmod kexec.ko
-			./kexec -l kernel --devtree=devtree --ramdisk=ramdisk.img
+			./kexec -l zImage --devtree=devtree7 --ramdisk=ramdisk.gz
 			sleep 1 
 			./kexec -e
 		else
-			/sbin/busybox umount /$ALT_SYSTEM_PART
+			/sbin/busybox umount /preinstall
 
 			/sbin/busybox umount -l /system
 
