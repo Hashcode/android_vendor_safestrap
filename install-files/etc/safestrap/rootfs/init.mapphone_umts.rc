@@ -45,7 +45,7 @@ on init
 
 # Permissions for RIL. Need to be set before boot.
 
-    chown radio radio /sys/class/radio/w3g_lte/command
+
 
 
     chmod 0660 /sys/bus/usb/devices/usb1/power/control
@@ -53,9 +53,9 @@ on init
     chown system radio /sys/bus/usb/devices/usb1/power/control
     chown system radio /sys/bus/usb/devices/usb2/power/control
 on fs
-    mount ext3 /dev/block/mmcblk1p22 /system wait ro noatime nodiratime barrier=1
+    mount ext3 /dev/block/mmcblk1p23 /system wait ro noatime nodiratime barrier=1
     exec /system/bin/logwrapper /system/bin/mount_ext3.sh pds /pds
-#    exec /system/bin/logwrapper /system/bin/mount_ext3.sh preinstall /preinstall
+    exec /system/bin/logwrapper /system/bin/mount_ext3.sh preinstall /preinstall
     exec /system/bin/logwrapper /system/bin/mount_ext3.sh userdata /data
     exec /system/bin/logwrapper /system/bin/mount_ext3.sh cache /cache
 on post-fs
@@ -211,8 +211,6 @@ on post-fs-data
     mkdir /data/emt 0770 root system
     # Set indication (checked by vold) that we have finished this action
     setprop vold.post_fs_data_done 1
-# MTU for USB tethering
-    write /sys/class/net/gether0/mtu 1428
 on early-boot
 # Adjust the out of memory thresholds to account for the larget
 # space on sholes. These numbers are in pages (4k). Must be kept
@@ -484,15 +482,16 @@ on boot
 # ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
     setprop net.tcp.buffersize.umts 64000,128000,256000,4096,16384,110208
     setprop net.tcp.buffersize.edge 16384,35040,65536,4096,16384,35040
-# Define optimized TCP buffer sizes for various networks
+# Define TCP buffer sizes for various networks
 # ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.default 131072,262144,524288,4096,16384,131072
-    setprop net.tcp.buffersize.wifi 131072,262144,524288,4096,16384,131072
-    setprop net.tcp.buffersize.umts 131072,262144,524288,4096,16384,131072
-    setprop net.tcp.buffersize.edge 16384,32768,65536,4096,16384,32768
-    setprop net.tcp.buffersize.gprs 4096,8192,12288,4096,8192,12288
-    setprop net.tcp.buffersize.lte 524288,1048576,2097152,262144,524288,1048576
-    setprop net.tcp.buffersize.4ghotspot 262144,524288,1048576,524288,1048576,2097152
+    setprop net.tcp.buffersize.default 131072,262144,524288,4096,16384,147456
+    setprop net.tcp.buffersize.wifi 131072,262144,524288,4096,16384,147456
+    setprop net.tcp.buffersize.umts 131072,262144,524288,4096,16384,147456
+    setprop net.tcp.buffersize.hspa 131072,262144,524288,4096,16384,147456
+    setprop net.tcp.buffersize.edge 16384,35040,65536,4096,16384,35040
+    setprop net.tcp.buffersize.gprs 4092,8760,11680,4096,8760,11680
+    setprop net.tcp.buffersize.2ghotspot 4096,16384,35040,16384,35040,65536
+    setprop net.tcp.buffersize.3ghotspot 4096,16384,147456,131072,262144,524288
 # Network Bandwidth control for netd
     setprop persist.bandwidth.enable 1
 # Start services
@@ -543,13 +542,11 @@ on property:tcmd.suspend=1
     stop surfaceflinger
     stop media
     stop zygote
-    write /sys/devices/virtual/radio/w3g_lte/command suspend
 # Normal to suspend
 on property:tcmd.suspend=2
     stop surfaceflinger
     stop media
     stop zygote
-    write /sys/devices/virtual/radio/w3g_lte/command suspend
 # suspend to start services
 on property:tcmd.suspend=3
     start surfaceflinger
@@ -616,9 +613,9 @@ on property:ro.hdcp.support=2
     chown system media /dev/omap-hdcp
     chmod 0660 /dev/omap-hdcp
 # The following services are added by moto
-#service qe /xbin/qe /system
-#    class core
-#    oneshot
+service qe /xbin/qe /system
+    class core
+    oneshot
 # Set property strings for ATVC logging
 # This conditionally sets :
 # ro.sys.atvc_allow_bp_log
@@ -817,7 +814,7 @@ service dhcpcd_wlan0 /system/bin/dhcpcd
     class main
     disabled
     oneshot
-service iprenew_wlan0 /system/bin/dhcpcd -nBK
+service iprenew_wlan0 /system/bin/dhcpcd -n
     class main
     disabled
     oneshot
@@ -825,7 +822,7 @@ service dhcpcd_p2p /system/bin/dhcpcd -aABKL
     class main
     disabled
     oneshot
-service iprenew_p2p /system/bin/dhcpcd -nBK
+service iprenew_p2p /system/bin/dhcpcd -n
     class main
     disabled
     oneshot
@@ -949,32 +946,17 @@ on property:persist.factory.allow_adb=0
 service vpnclientpm /system/bin/vpnclientpm
     class main
     user root
-#service loadpreinstalls /system/bin/logwrapper /system/bin/loadpreinstalls.sh
-#    class main
-#    user system
-#    group system
-#    disabled
-#    oneshot
+service loadpreinstalls /system/bin/logwrapper /system/bin/loadpreinstalls.sh
+    class main
+    user system
+    group system
+    disabled
+    oneshot
 #IKCBS-229 start RescueStarter for MobileRescue
 service RescueStarter /system/bin/RescueStarter
     user graphics
     group input graphics
     class main
-service gadget-lte-modem /system/bin/tty2ttyd ril.wrigley.modem.tty /dev/ttyGS1 0 512
-    user radio
-    group radio
-    disabled
-service wrigley-diag /system/bin/wrigley-diag.sh
-    user log
-    group net_admin
-    oneshot
-    disabled
-service logcatd-blan /system/bin/logcatd-blan
-    user root
-    # Immediately drops root, keeps CAP_SYS_ADMIN, and runs as below
-    # user system
-    # group system log inet
-    disabled
 # auEmail provisioning daemon
 service aepls001 /system/bin/aepls001
     class main
@@ -983,9 +965,6 @@ service aepls001 /system/bin/aepls001
     group nobody
 on property:ro.bootmode=bp-tools
     start tcmd
-    write /proc/sys/net/ipv4/ip_forward 1
-    start wrigley-diag
-    start logcatd-blan
 service JuniperVPNTools /system/bin/JuniperVPNTools
     class main
     user vpn
@@ -1010,7 +989,7 @@ on property:sys.usb.config=mass_storage
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 22b8
     write /sys/class/android_usb/android0/idProduct 4365
-    write /sys/module/g_android/parameters/cdrom 1
+    write /sys/module/g_android/parameters/cdrom 0
     write /sys/module/g_android/parameters/cdrom_switch 0
     write /sys/class/android_usb/android0/functions "mass_storage"
     write /sys/class/android_usb/android0/enable 1
@@ -1020,7 +999,7 @@ on property:sys.usb.config=mass_storage,adb
     write /sys/class/android_usb/android0/enable 0
     write /sys/class/android_usb/android0/idVendor 22b8
     write /sys/class/android_usb/android0/idProduct 4366
-    write /sys/module/g_android/parameters/cdrom 1
+    write /sys/module/g_android/parameters/cdrom 0
     write /sys/module/g_android/parameters/cdrom_switch 0
     write /sys/class/android_usb/android0/functions "mass_storage,adb"
     write /sys/class/android_usb/android0/enable 1
