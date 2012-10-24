@@ -1,0 +1,319 @@
+import init.omap4430.usb.rc
+
+on init
+    loglevel 8
+    exec /sbin/fixboot.sh
+
+    export EXTERNAL_STORAGE /storage/sdcard0
+    export DOWNLOAD_CACHE /cache/download
+    mkdir /storage 0050 system sdcard_r
+    mkdir /storage/sdcard0 0000 system system
+    # for backwards compatibility
+    symlink /storage/sdcard0 /sdcard
+    symlink /storage/sdcard0 /mnt/sdcard
+
+# create removable USB Mass Storage mountpoints
+    mkdir /storage/usb0 0000 system system
+    mkdir /storage/usb1 0000 system system
+
+# power management
+# Enable off mode by default
+#    write /sys/kernel/debug/pm_debug/enable_off_mode 1
+
+on fs
+    mkdir /factory 0775 radio radio
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/system /system wait ro
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata /data wait noatime nosuid nodev errors=continue discard
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/cache /cache wait noatime nosuid nodev errors=continue discard
+    mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/splash /dropbox wait noatime nosuid nodev errors=continue discard
+
+# pvr module
+    insmod /system/lib/modules/pvrsrvkm_sgx540_120.ko
+    insmod /system/lib/modules/omaplfb_sgx540_120.ko
+
+on post-fs
+# make dir for cache
+    mkdir /cache/download 0777 system system
+
+# We chown/chmod /data again so because mount is run as root + defaults
+#    chown system system /data
+#    chmod 0771 /data
+
+    chmod 0666 /dev/pvrsrvkm
+
+# change permissions for mtd device
+    chmod 0660 /dev/mtd/mtd0
+    chown media media /dev/mtd/mtd0
+
+# change permissions for i2c-2 device
+    chmod 0660 /dev/i2c-2
+    chown media media /dev/i2c-2
+
+# change permissions for Tiler driver
+    chmod 0777 /dev/tiler
+    chmod 0777 /dev/dmm
+
+# Set default maximum of 1008 on cpu0 (peformance settings will change this if set by user)
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1008000
+
+#Give system ownership and permission to boost clock for specified timeout
+#Note boost_timeout cannot be changed from application because of dynamic sysfs creation. It will have default value of 3 sec.
+    chown system system /sys/devices/system/cpu/cpu0/cpufreq/boost_cpufreq
+    chmod 0664  /sys/devices/system/cpu/cpu0/cpufreq/boost_cpufreq
+
+# Boost the CPU for 30 secs during boot
+    write /sys/devices/system/cpu/cpufreq/interactive/boost_timeout 30000000
+    write /sys/devices/system/cpu/cpu0/cpufreq/boost_cpufreq 1
+
+
+# change permissions for ION driver
+    chmod 0777 /dev/ion
+
+# We chown/chmod /factory because mount is run as root + defaults
+    chown radio radio /factory
+    chmod 0775 /factory
+
+# add symlink for HDCP key
+#   symlink /factory/hdcp.keys /system/vendor/firmware/hdcp.key
+
+
+# change permissions for Sensors
+    chown system system /sys/devices/virtual/input/input0/mode
+    chmod 0771 /sys/devices/virtual/input/input0/mode
+    chown system system /sys/devices/virtual/input/input0/delay
+    chmod 0771 /sys/devices/virtual/input/input0/delay
+
+    # change permissions for alsa nodes
+    chmod 0777 /dev/snd/controlC0
+    chmod 0777 /dev/snd/pcmC0D0p
+    chmod 0777 /dev/snd/pcmC0D1c
+    chmod 0777 /dev/snd/pcmC0D1p
+    chmod 0777 /dev/snd/pcmC0D2c
+    chmod 0777 /dev/snd/pcmC0D3c
+    chmod 0777 /dev/snd/pcmC0D3p
+    chmod 0777 /dev/snd/pcmC0D4c
+    chmod 0777 /dev/snd/pcmC0D4p
+    chmod 0777 /dev/snd/pcmC0D5c
+    chmod 0777 /dev/snd/pcmC0D5p
+    chmod 0777 /dev/snd/timer
+
+    # change permissions for modem
+    chmod 0660 /dev/ttyS0
+    chown radio radio /dev/ttyS0
+
+    # change permissions for Thermal sensor TMP105
+    chmod 0777 /sys/class/hwmon/hwmon0/device/temp1_max
+    chmod 0777 /sys/class/hwmon/hwmon0/device/temp1_max_hyst
+
+     # change permissions for Tiler driver
+    chown media media /dev/tiler
+    chmod 0666 /dev/tiler
+
+# LEDs
+    chmod 0777 /dev/ilitek_ctrl
+    chmod 0777 /sys/class/leds/lcd-backlight/brightness
+    chmod 0666 /sys/class/leds/led-green/brightness
+    chmod 0666 /sys/class/leds/led-orange/brightness
+    chown system system /sys/class/leds/lcd-backlight/brightness
+    chown system system /sys/class/leds/led-green/brightness
+    chown system system /sys/class/leds/led-orange/brightness
+
+# Revert the boost_timeout to the default value of 3 sec. Note this won't affect the prev boost
+# request for boot time reduction
+    write /sys/devices/system/cpu/cpufreq/hotplug/boost_timeout 3000000
+
+# Set current permissions for charge protection
+    chown system system /sys/class/power_supply/usb/device/charge_command
+    chown system system /sys/class/power_supply/usb/device/charge_current
+    chown system system /sys/class/power_supply/usb/device/float_voltage
+    chown system system /sys/class/power_supply/usb/device/bad_battery
+
+# wi-fi
+    setprop wifi.interface "wlan0"
+    setprop softap.interface "wlan0"
+
+    insmod /system/lib/modules/compat.ko
+    insmod /system/lib/modules/cfg80211.ko
+    insmod /system/lib/modules/mac80211.ko
+    insmod /system/lib/modules/wl12xx.ko
+
+on post-fs-data
+    mkdir /data/tmp 0777 system system
+    symlink /data/tmp /tmp
+
+# make dir for trace
+    mkdir /data/trace 0777 system system
+    chmod 0777 /data/trace
+
+# wifi
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    chown dhcp dhcp /data/misc/dhcp
+    mkdir /data/smc 0770 drmrpc drmrpc
+    chown drmrpc drmrpc /data/smc/counter.bin
+    chown drmrpc drmrpc /data/smc/storage.bin
+    chown drmrpc drmrpc /data/smc/system.bin
+
+    setprop vold.post_fs_data_done 1
+
+on boot
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+    setprop ro.radio.noril yes
+
+    # change permissions for overlay managers and display devices
+    chown system system /sys/devices/platform/omapdss/display0/enabled
+    chown system system /sys/devices/platform/omapdss/display1/enabled
+    chown system system /sys/devices/platform/omapdss/display2/enabled
+    chown system system /sys/devices/platform/omapdss/display3/enabled
+    chown system system /sys/devices/platform/omapdss/display0/name
+    chown system system /sys/devices/platform/omapdss/display1/name
+    chown system system /sys/devices/platform/omapdss/display2/name
+    chown system system /sys/devices/platform/omapdss/display3/name
+    chown system system /sys/devices/platform/omapdss/overlay0/manager
+    chown system system /sys/devices/platform/omapdss/overlay1/manager
+    chown system system /sys/devices/platform/omapdss/overlay2/manager
+    chown system system /sys/devices/platform/omapdss/overlay3/manager
+    chown system system /sys/devices/platform/omapdss/overlay0/zorder
+    chown system system /sys/devices/platform/omapdss/overlay1/zorder
+    chown system system /sys/devices/platform/omapdss/overlay2/zorder
+    chown system system /sys/devices/platform/omapdss/overlay3/zorder
+    # change permissions for manager tranparency parameters
+    chown system system /sys/devices/platform/omapdss/manager0/name
+    chown system system /sys/devices/platform/omapdss/manager0/display
+    chown system system /sys/devices/platform/omapdss/manager1/name
+    chown system system /sys/devices/platform/omapdss/manager1/display
+    chown system system /sys/devices/platform/omapdss/manager2/name
+    chown system system /sys/devices/platform/omapdss/manager2/display
+    chown system system /sys/devices/platform/omapdss/overlay0/enabled
+    chown system system /sys/devices/platform/omapdss/overlay1/enabled
+    chown system system /sys/devices/platform/omapdss/overlay2/enabled
+    chown system system /sys/devices/platform/omapdss/overlay3/enabled
+    # change permissions for display timings to get the resolutions
+    chown system system /sys/devices/platform/omapdss/display0/timings
+    chown system system /sys/devices/platform/omapdss/display1/timings
+    chown system system /sys/devices/platform/omapdss/display2/timings
+    chown system system /sys/devices/platform/omapdss/display3/timings
+    chown system system /sys/devices/platform/omapdss/display2/code
+# fake some battery state
+    setprop status.battery.state Slow
+    setprop status.battery.level 5
+    setprop status.battery.level_raw  50
+    setprop status.battery.level_scale 9
+
+# create filesystems if necessary (hijack testing)
+#service setup_fs /system/bin/setup_fs.bin \
+#		/dev/block/platform/omap/omap_hsmmc.1/by-name/cache \
+#		/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+#        class core
+#        user root
+#        group root
+#        oneshot
+
+service fixmac /system/bin/fix-mac.sh
+    class core
+    user root
+    group root
+    oneshot
+
+service hwprops /sbin/hwprops
+    critical
+    disabled
+    oneshot
+
+# initialize the SGX driver
+service pvrsrvinit /system/vendor/bin/pvrsrvinit
+    class core
+    user root
+    group root
+    oneshot
+
+###################################################
+# MSHIELD SMC Daemon - component required to store persistent data coming
+#   from the SMC PA to the device persistent storage
+###################################################
+service tf_daemon /system/bin/tf_daemon \
+    -d -c /vendor/etc/smc_normal_world_android_cfg.ini
+    class main
+    user root
+    group root
+    oneshot
+    disabled
+
+###################################################
+# MSHIELD SMC PA Control - installs the SMC PA into the Secure Environment
+###################################################
+service smc_pa /system/bin/smc_pa_ctrl \
+    -c /vendor/etc/smc_normal_world_android_cfg.ini \
+    start /vendor/firmware/smc_pa.ift
+    class core
+    user root
+    group root
+    oneshot
+
+# wifi services
+service p2p_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -N \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf -puse_p2p_group_interface=1
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -e/data/misc/wifi/entropy.bin
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+    class main
+    disabled
+    oneshot
+
+service iprenew_wlan0 /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_p2p /system/bin/dhcpcd -aABKL
+    class main
+    disabled
+    oneshot
+
+service iprenew_p2p /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+    class main
+    disabled
+    oneshot
+
+service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
+    class main
+    disabled
+    oneshot
+
+service iprenew_bnep0 /system/bin/dhcpcd -n
+    class main
+    disabled
+    oneshot
+
+service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
+    socket wpa_wlan0 dgram 660 wifi wifi
+    class main
+    disabled
+    oneshot
+
+#on property:init.svc.smc_pa=stopped
+#	start tf_daemon
+
+#service watchdog /sbin/watchdog
+#    user root
+#    oneshot
+
+on property:sys.boot_completed=1
+

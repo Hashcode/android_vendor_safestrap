@@ -1,0 +1,294 @@
+import init.omap4blazeboard.usb.rc
+
+on early-init
+    exec /sbin/fixboot.sh
+    export EXTERNAL_STORAGE /mnt/sdcard
+    mkdir /mnt/sdcard 0000 system system
+    # for backwards compatibility
+    symlink /mnt/sdcard /sdcard
+
+# create Ext SDcard mountpoint
+    mkdir /mnt/ext_sdcard 0000 system system
+
+
+on post-fs-data
+    # we will remap this as /mnt/sdcard with the sdcard fuse tool
+    mkdir /data/media 0775 media_rw media_rw
+    chown media_rw media_rw /data/media
+	mkdir /data/smc 0770 drmrpc drmrpc
+        chown drmrpc drmrpc /data/smc/counter.bin
+        chown drmrpc drmrpc /data/smc/storage.bin
+        chown drmrpc drmrpc /data/smc/system.bin
+
+	setprop vold.post_fs_data_done 1
+
+on boot
+#	mount debugfs /sys/kernel/debug /sys/kernel/debug
+	chmod 0666 /dev/pvrsrvkm
+	chmod 0444 /system/usr/keychars/omap4-keypad.kcm.bin
+	setprop ro.crypto.keyfile.userdata /dev/block/platform/omap/omap_hsmmc.1/by-name/crypto
+
+# Boost the CPU for 30 secs during boot
+	write /sys/devices/system/cpu/cpufreq/interactive/boost_timeout 30000000
+	write /sys/devices/system/cpu/cpu0/cpufreq/boost_cpufreq 1
+
+# autosuspend root hubs immediatly after attached devices
+	write /sys/bus/usb/devices/usb1/power/autosuspend_delay_ms 0
+	write /sys/bus/usb/devices/usb2/power/autosuspend_delay_ms 0
+
+# Remove the Ultra Fast Media Card Reader on EHCI bus
+	write /sys/bus/usb/devices/1-1.1/remove 1
+
+# Set Remote wakeup flag for the two Hubs on the Tablet board
+	write /sys/bus/usb/devices/1-1/power/wakeup enabled
+	write /sys/bus/usb/devices/1-1.2/power/wakeup enabled
+
+# wi-fi
+	mkdir /data/misc/wifi/sockets 0770 wifi wifi
+	mkdir /data/misc/dhcp 0770 dhcp dhcp
+	chown system wifi /data/misc/wifi/wpa_supplicant.conf
+	insmod /system/lib/modules/compat.ko
+	insmod /system/lib/modules/cfg80211.ko
+	insmod /system/lib/modules/mac80211.ko
+	insmod /system/lib/modules/wl12xx.ko debug_level=0x63c00
+
+# GPS
+        mkdir /data/gps 0771 system system
+        chown /data/gps system system
+
+on fs
+	mkdir /efs 0775 radio radio
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/system /system wait rw
+	chmod 0755 /system/vendor/oprofile/oprofile-boot
+	chmod 0755 /system/vendor/bsptestd/startbsptestd
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/system /system ro remount
+	setprop ro.crypto.tmpfs_options size=128m,mode=0771,uid=1000,gid=1000
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/userdata /data wait noatime nosuid nodev nomblk_io_submit,errors=panic
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/cache /cache wait noatime nosuid nodev nomblk_io_submit,errors=panic
+	mount ext4 /dev/block/platform/omap/omap_hsmmc.1/by-name/efs /efs wait
+	chmod 0755 /system/bin/update_wifi_calibration.sh
+	setprop ro.crypto.fuse_sdcard true
+	chmod 0666 /dev/block/platform/omap/omap_hsmmc.1/by-name/misc
+	symlink    /dev/block/platform/omap/omap_hsmmc.1/by-name/misc /misc
+
+# change permissions for ION driver
+    chmod 0777 /dev/ion
+
+# We chown/chmod /factory because mount is run as root + defaults
+	chown radio radio /factory
+	chmod 0775 /factory
+
+# change permissions for touch driver
+    chmod 0666 /dev/ilitek_ctrl
+
+# add symlink for HDCP key
+        symlink /factory/hdcp.keys /system/vendor/firmware/hdcp.keys
+
+# change permissions for Sensors
+    #chown system system /sys/bus/i2c/drivers/cma3000_accl/4-001c
+    #chown system system /sys/bus/i2c/drivers/cma3000_accl/4-001c/enable
+    #chown system system /sys/bus/i2c/drivers/cma3000_accl/4-001c/delay
+    #chown system system /sys/bus/i2c/drivers/tsl2771/4-0039
+    #chown system system /sys/bus/i2c/drivers/tsl2771/4-0039/als_enable
+    #chown system system /sys/bus/i2c/drivers/tsl2771/4-0039/prox_enable
+    #chown system system /sys/bus/i2c/drivers/bma180_accel/4-0040
+    #chown system system /sys/bus/i2c/drivers/bma180_accel/4-0040/enable
+    #chown system system /sys/bus/i2c/drivers/bma180_accel/4-0040/delay
+    #chown system system /sys/bus/i2c/drivers/mpu3050_gyro/4-0068
+    #chown system system /sys/bus/i2c/drivers/mpu3050_gyro/4-0068/enable
+    #chown system system /sys/bus/i2c/drivers/mpu3050_gyro/4-0068/delay
+    #chown system system /sys/bus/i2c/drivers/bmp085/4-0077
+    #chown system system /sys/bus/i2c/drivers/bmp085/4-0077/enable
+    #chown system system /sys/bus/i2c/drivers/hmc5843/4-001e
+    #chown system system /sys/bus/i2c/drivers/hmc5843/4-001e/enable
+    #chown system system /sys/bus/i2c/drivers/hmc5843/4-001e/rate
+    chown system system /sys/bus/i2c/drivers/bma250/4-0018
+    chown system system /sys/bus/i2c/drivers/bma250/4-0018/enable
+    chown system system /sys/bus/i2c/drivers/bma250/4-0018/delay
+
+# camera calibration - DCC folder permission
+    chown media media /data/misc/camera
+    chown media media /data/misc/camera/R12_MVEN001_LD1_ND0_IR0_SH0_FL0_SVEN001_DCCID43
+    chown media media /data/misc/camera/R12_MVEN002_LD2_ND0_IR0_SH0_FL0_SVEN002_DCCID42
+    chown media media /data/misc/camera/R8_MVEN002_LD2_ND0_IR0_SH0_FL1_SVEN003_DCCID1042
+
+# change permissions for S3D hardware
+    chown system system /sys/devices/platform/omapdss/display0/s3d_enable
+    chown system system /sys/devices/platform/omapdss/display1/s3d_enable
+    chown system system /sys/devices/platform/omapdss/display1/s3d_type
+
+# Change permissions on the governor (this is for debug only)
+    chmod 444 /proc/cmdline
+
+# Change permissions on the charger driver
+	chown system system /sys/class/power_supply/usb/device/charge_command
+	chown system system /sys/class/power_supply/usb/device/charge_current
+	chown system system /sys/class/power_supply/usb/device/bad_battery
+
+service pvrsrvinit /vendor/bin/pvrsrvinit
+	class core
+	user root
+	group root
+	oneshot
+
+# create filesystems if necessary
+# call the original setup_fs to avoid a re-hijack
+service setup_fs /system/bin/setup_fs.bin \
+		/dev/block/platform/omap/omap_hsmmc.1/by-name/cache \
+		/dev/block/platform/omap/omap_hsmmc.1/by-name/userdata
+        class core
+        user root
+        group root
+        oneshot
+
+# create virtual SD card at /mnt/sdcard, based on the /data/media directory
+# daemon will drop to user/group system/media_rw after initializing
+# underlying files in /data/media will be created with user and group media_rw (1023)
+service sdcard /system/bin/sdcard /data/media 1023 1023
+	class late_start
+
+service wpa_supplicant /system/bin/wpa_supplicant -Dnl80211 -iwlan0
+	class main
+	socket wpa_wlan0 dgram 660 wifi wifi
+	disabled
+	oneshot
+
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKL
+	class main
+	disabled
+	oneshot
+
+service iprenew_wlan0 /system/bin/dhcpcd -n
+	class main
+	disabled
+	oneshot
+
+service dhcpcd_p2p /system/bin/dhcpcd -aABKL
+	class main
+	disabled
+	oneshot
+
+service iprenew_p2p /system/bin/dhcpcd -n
+	class main
+	disabled
+	oneshot
+
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+	class main
+	disabled
+	oneshot
+
+service dhcpcd_bnep0 /system/bin/dhcpcd -ABKL
+	class main
+	disabled
+	oneshot
+
+service iprenew_bnep0 /system/bin/dhcpcd -n
+	class main
+	disabled
+	oneshot
+
+service gpsd /system/bin/gllbs -c /system/etc/gpsconfig.xml
+        class main
+        socket gps seqpacket 0660 gps system
+
+service hostapd_bin /system/bin/hostapd -d /data/misc/wifi/hostapd.conf
+	socket wpa_wlan1 dgram 660 wifi wifi
+	class main
+	disabled
+	oneshot
+
+service temperature_log /system/bin/temperature_log.sh
+	disabled
+	oneshot
+
+service thermal_setup /system/bin/thermal_setup.sh
+	class core
+	user root
+	group root
+	oneshot
+
+service battery_log /system/bin/battery_log.sh
+	disabled
+	oneshot
+
+service wifi_cal /system/bin/update_wifi_calibration.sh
+	class main
+	user root
+	group root
+	oneshot
+
+
+service printboottime /system/bin/PrintBootTime
+	disabled
+	oneshot
+
+service smc /system/vendor/bin/start_smc.sh
+        class main
+        user root
+        group root
+        oneshot
+
+service check_shutdown /system/bin/auto_shutdown
+        user root
+        disabled
+        oneshot
+
+service PrintSwVer /system/bin/dumpswver
+	oneshot
+
+
+service dsn_fixup /system/bin/dsn_fixup
+	class main
+	user root
+	group root
+	oneshot
+
+service boot_reason /system/bin/boot_reason
+    oneshot
+
+service watchdog /sbin/watchdog -t 30
+    class core
+    oneshot
+    critical
+
+service dmesg_log /system/bin/dmesg_log.sh
+	class main
+	user root
+	group root
+	oneshot
+	disabled
+
+service rpmsg_daemon /system/bin/rpmsg_traced -s 0xbc500000 -a 0xbc570000
+	class main
+	user root
+	group root
+	oneshot
+	disabled
+
+service rpmsg_log /system/bin/rpmsg_traced.sh
+	class main
+	user root
+	group root
+	oneshot
+	disabled
+
+on property:sys.boot_completed=1
+	start printboottime
+	start PrintSwVer
+	start check_shutdown
+
+service oprofile-boot /system/vendor/oprofile/oprofile-boot
+	class main
+	user root
+	oneshot
+
+on property:wlan.driver.status=ok
+    chown wifi wifi /sys/devices/platform/wl1271/bt_coex_state
+
+#bsptestd service for compliance tool/thermal validation/Load Generator
+service bsptestd /system/vendor/bsptestd/startbsptestd
+    socket bsptestd stream 0666 root root
+    disabled
+

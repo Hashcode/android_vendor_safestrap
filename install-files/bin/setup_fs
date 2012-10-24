@@ -1,0 +1,236 @@
+#!/system/bin/sh
+# By: Hashcode
+# Last Edit: 10/23/2012
+PATH=/system/xbin:/system/bin:/sbin
+BLOCKNAME_DIR=/dev/block/platform/omap/omap_hsmmc.1/by-name
+HIJACK_BIN=setup_fs
+
+# SS3 Setup
+SYS_MNT=/s2
+USER_MNT=/userdataorig
+IMG_FSTYPE=ext4
+SS_MNT=/ss
+SS_PART=media
+
+RECOVERY_DIR=/system/etc/safestrap
+SS_DIR=$SS_MNT/safestrap
+ALT_SYSTEM_MODE="0"
+
+# Dont really need to check for a trigger value here since setup_fs is a oneshot service
+#if [ "$2" = "$BLOCKNAME_DIR/userdata" ]; then
+	# remount root as rw
+	mount -o remount,rw rootfs
+
+	# create safestrap mount point
+	/sbin/bbx mkdir $SS_MNT
+	/sbin/bbx chown 0.2000 $SS_MNT
+	/sbin/bbx chmod 777 $SS_MNT
+	/sbin/bbx mkdir $SYS_MNT
+	/sbin/bbx chown 0.2000 $SYS_MNT
+	/sbin/bbx chmod 777 $SYS_MNT
+	/sbin/bbx mkdir $USER_MNT
+	/sbin/bbx chown 0.2000 $USER_MNT
+	/sbin/bbx chmod 777 $USER_MNT
+
+	# need busybox
+	cp $RECOVERY_DIR/bbx /sbin/bbx
+	chmod 755 /sbin/bbx
+	chown 0.2000 /sbin/bbx
+
+	# extract 2nd-init because we need it either way
+	# extract safestrapmenu/res files because we can't run them from system once we unmount it
+	/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+	/sbin/bbx cp $RECOVERY_DIR/safestrapmenu /sbin
+	/sbin/bbx mkdir /ss-res
+	/sbin/bbx cp $RECOVERY_DIR/res/* /ss-res/
+
+	# in case of passthru pull rootfs files for restarting stock
+	/sbin/bbx mv /init /init.old
+	/sbin/bbx cp $RECOVERY_DIR/rootfs/* /
+
+	/sbin/bbx chmod 750 /sbin/*
+	/sbin/bbx chmod 644 /default.prop
+	/sbin/bbx chmod 755 /init
+	/sbin/bbx chmod 755 /*.rc
+	/sbin/bbx chmod 755 /*.sh
+
+	# userdata is already mounted here
+	# mount safestrap partition
+#	/sbin/bbx mkdir $SS_PART
+	/sbin/bbx mount -t vfat $BLOCKNAME_DIR/$SS_PART $SS_MNT
+
+	if [ ! -d "$SS_DIR" ]; then
+		/sbin/bbx mkdir -p $SS_DIR
+	fi
+	if [ ! -f "$SS_DIR/active_slot" ]; then
+		/sbin/bbx echo "stock" > $SS_DIR/active_slot
+	fi
+	SLOT_LOC=$(/sbin/bbx cat $SS_DIR/active_slot)
+	if [ -f "$SS_DIR/$SLOT_LOC/system.img" ] && [ -f "$SS_DIR/$SLOT_LOC/userdata.img" ] && [ -f "$SS_DIR/$SLOT_LOC/cache.img" ]; then
+		ALT_SYSTEM_MODE="1"
+	fi
+
+	# check for .recovery_mode on current /data mount
+	if [ "$ALT_SYSTEM_MODE" = "1" ]; then
+		# setup loopback
+		/sbin/bbx losetup /dev/block/loop6 $SS_DIR/$SLOT_LOC/userdata.img
+		/sbin/bbx mount -t $IMG_FSTYPE /dev/block/loop6 $USER_MNT
+		if [ -f $USER_MNT/.recovery_mode ]; then
+			/sbin/bbx rm $USER_MNT/.recovery_mode
+			ALT_SYSTEM_MODE="2"
+		fi
+		/sbin/bbx umount $USER_MNT
+		/sbin/bbx losetup -d /dev/block/loop6
+	else
+		if [ -f /data/.recovery_mode ]; then
+			/sbin/bbx rm /data/.recovery_mode
+			ALT_SYSTEM_MODE="2"
+		fi
+	fi
+
+	if [ "$ALT_SYSTEM_MODE" = "2" ] || [ $(/sbin/safestrapmenu $ALT_SYSTEM_MODE > /dev/null 2>&1;echo $?) -eq 0 ]; then
+		# filesystem cleanup
+		/sbin/bbx rm /etc
+		/sbin/bbx mkdir /etc
+		/sbin/bbx chmod 755 /etc
+		/sbin/bbx rm /sdcard
+		/sbin/bbx rm /sdcard-ext
+		/sbin/bbx rm -rf /mnt
+		/sbin/bbx rm /vendor
+		/sbin/bbx rm /d
+		/sbin/bbx rm /tmp
+		/sbin/bbx mkdir /tmp
+
+		# move bins out of the way
+		/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+		/sbin/bbx mv /init /init.old
+
+		# extract recovery ramdisk
+		/sbin/bbx cd /
+		/sbin/bbx unzip -o $RECOVERY_DIR/recovery.zip -d /
+		/sbin/bbx cd /sbin
+		/sbin/bbx ln -s /sbin/busybox /sbin/sh
+		/sbin/bbx chmod -R 755 /res/*
+		/sbin/bbx chmod 644 /default.prop
+		/sbin/bbx chmod -R 755 /charger/*
+		/sbin/bbx chmod -R 755 /etc/*
+		/sbin/bbx chmod 755 /init
+		/sbin/bbx chmod 755 /*.rc
+		/sbin/bbx chmod 755 /*.sh
+		/sbin/bbx chmod -R 755 /sbin/*
+
+		# setup translate table
+		# echo `busybox ls -l /dev/block/platform/omap/omap_hsmmc.1/by-name/ | busybox grep system | busybox tail -c 21`=system
+		/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep system | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/system > $SS_DIR/translate
+		/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep userdata | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/userdata >> $SS_DIR/translate
+		/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep cache | /sbin/bbx tail -c 22`=$BLOCKNAME_DIR/cache >> $SS_DIR/translate
+		# meager attempt at stopping writes to the boot device
+		/sbin/bbx echo `/sbin/bbx ls -l $BLOCKNAME_DIR/ | /sbin/bbx grep boot | /sbin/bbx tail -c 22`=/dev/null >> $SS_DIR/translate
+		/sbin/bbx echo /dev/block/platform/omap/omap_hsmmc.1/by-name/boot=/dev/null >> $SS_DIR/translate
+		# unmount partitions
+		/sbin/bbx umount /system
+
+		/sbin/hijack.killall > $SS_MNT/kill.log
+		/sbin/ps >> $SS_MNT/kill.log
+		/sbin/mount >> $SS_MNT/kill.log
+
+		/sbin/bbx umount $SS_MNT
+
+		/sbin/taskset -p -c 0 1
+		/sbin/bbx sync
+		/sbin/taskset -c 0 /sbin/2nd-init
+		exit
+	fi
+
+	# check for active virtual system
+	if [ "$ALT_SYSTEM_MODE" = "1" ]; then
+		/sbin/bbx unzip -o $RECOVERY_DIR/2nd-init.zip -d /sbin
+		/sbin/bbx chmod 750 /sbin/*
+
+		# setup loopback
+		/sbin/bbx losetup /dev/block/loop7 $SS_DIR/$SLOT_LOC/system.img
+		/sbin/bbx mount -t $IMG_FSTYPE /dev/block/loop7 $SYS_MNT
+
+		# check for hijacks, and remove
+		if [ -f "$SYS_MNT/bin/$HIJACK_BIN.bin" ]; then
+			/sbin/bbx rm $SYS_MNT/bin/$HIJACK_BIN
+			/sbin/bbx mv $SYS_MNT/bin/$HIJACK_BIN.bin $SYS_MNT/bin/$HIJACK_BIN
+			/sbin/bbx chmod 755 $SYS_MNT/bin/$HIJACK_BIN
+			/sbin/bbx chown 0.2000 $SYS_MNT/bin/$HIJACK_BIN
+		fi
+
+		# check for kexec files
+		if [ -d "$SYS_MNT/etc/kexec" ]; then
+			/sbin/bbx cp $SYS_MNT/etc/kexec/* /
+
+			# unmount new /system
+			/sbin/bbx umount $SYS_MNT
+			/sbin/bbx losetup -d /dev/block/loop7
+			/sbin/bbx umount $SS_MNT
+
+			/sbin/hijack.killall
+
+			/sbin/bbx cd /
+			/sbin/bbx chmod 755 /kexec
+			/sbin/bbx chown 0.2000 /kexec
+			/sbin/bbx insmod /uart.ko
+			/sbin/bbx insmod /arm_kexec.ko
+			/sbin/bbx insmod /kexec.ko
+			/kexec -l /kernel --devtree=/devtree --ramdisk=/ramdisk.img
+			/sbin/bbx sleep 1
+			/kexec -e
+			exit
+		fi
+
+		# if there's a ramdisk then extract it
+		if [ -d "$SYS_MNT/etc/rootfs" ]; then
+			if [ -f "$SYS_MNT/etc/rootfs/sbin/adbd" ]; then
+				/sbin/bbx mv /sbin/adbd /sbin/adbd.old
+			fi
+			if [ -f "$SYS_MNT/etc/rootfs/init" ]; then
+				/sbin/bbx mv /init /init.old
+			fi
+			/sbin/bbx cp -R $SYS_MNT/etc/rootfs/* /
+		fi
+
+		# reset permissions
+		/sbin/bbx chmod -R 750 /sbin/*
+		/sbin/bbx chmod 755 /init
+		/sbin/bbx chmod 755 /charger
+		/sbin/bbx chmod 644 /default.prop
+		/sbin/bbx chmod 755 /*.rc
+		/sbin/bbx chmod 755 /*.sh
+
+		# unmount new /system
+		/sbin/bbx umount $SYS_MNT
+		/sbin/bbx losetup -d /dev/block/loop7
+		/sbin/bbx umount $SS_MNT
+
+		# unmount old /system
+		/sbin/bbx umount -l /system
+
+		/sbin/hijack.killall
+
+		# mount point / symlink cleanup
+		/sbin/bbx rm /sdcard
+		/sbin/bbx rm /sdcard-ext
+
+		/sbin/taskset -p -c 0 1
+		/sbin/bbx sync
+		/sbin/taskset -c 0 /sbin/2nd-init
+		exit
+	fi
+
+	# unmount safestrap partition
+	/sbin/bbx umount $SS_MNT
+#fi
+
+# reset w/ 2nd-init because of the systen unmount
+/sbin/hijack.killall
+
+/sbin/taskset -p -c 0 1
+/sbin/bbx sync
+/sbin/taskset -c 0 /sbin/2nd-init
+
+#/system/bin/$HIJACK_BIN.bin "$@"
+
